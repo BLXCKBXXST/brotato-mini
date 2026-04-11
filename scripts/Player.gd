@@ -1,12 +1,17 @@
 # Player.gd
 extends CharacterBody2D
 
-@onready var sprite: ColorRect        = $Sprite
-@onready var attack_timer: Timer      = $AttackTimer
+@onready var sprite: ColorRect           = $Sprite
+@onready var attack_timer: Timer         = $AttackTimer
 @onready var collision: CollisionShape2D = $Collision
-@onready var range_indicator: Node2D  = $RangeIndicator
+@onready var range_indicator: Node2D     = $RangeIndicator
 
 const BULLET_SCENE := preload("res://scenes/Bullet.tscn")
+
+# поля арены (должны совпадать с ARENA_RECT в Main.gd)
+const ARENA_MIN := Vector2(208, 78)
+const ARENA_MAX := Vector2(1072, 702)
+const HALF := Vector2(18, 18)  # половина спрайта игрока
 
 var attack_cooldown: float = 0.0
 var is_dead: bool = false
@@ -18,7 +23,6 @@ func _ready() -> void:
 func _sync_stats() -> void:
 	is_dead = false
 	attack_cooldown = 1.0 / float(GameManager.player_stats["attack_speed"])
-	print("[Player] stats synced, attack_cooldown=", attack_cooldown)
 
 func _physics_process(delta: float) -> void:
 	if GameManager.game_state != "fight" or is_dead:
@@ -26,6 +30,7 @@ func _physics_process(delta: float) -> void:
 		return
 	_handle_movement(delta)
 	_handle_shooting(delta)
+	_clamp_to_arena()
 
 func _handle_movement(_delta: float) -> void:
 	var dir := Vector2(
@@ -36,6 +41,10 @@ func _handle_movement(_delta: float) -> void:
 		dir = dir.normalized()
 	velocity = dir * float(GameManager.player_stats["speed"])
 	move_and_slide()
+
+func _clamp_to_arena() -> void:
+	global_position.x = clampf(global_position.x, ARENA_MIN.x + HALF.x, ARENA_MAX.x - HALF.x)
+	global_position.y = clampf(global_position.y, ARENA_MIN.y + HALF.y, ARENA_MAX.y - HALF.y)
 
 func _handle_shooting(delta: float) -> void:
 	attack_cooldown -= delta
@@ -65,8 +74,11 @@ func _shoot(target: Node2D) -> void:
 	var bullet := BULLET_SCENE.instantiate()
 	get_tree().current_scene.get_node("GameObjects").add_child(bullet)
 	bullet.global_position = global_position
-	var shoot_dir: Vector2 = target.global_position - global_position
-	bullet.setup(shoot_dir, float(GameManager.player_stats["damage"]), int(GameManager.player_stats["pierce"]))
+	bullet.setup(
+		target.global_position - global_position,
+		float(GameManager.player_stats["damage"]),
+		int(GameManager.player_stats["pierce"])
+	)
 
 func take_damage(amount: float) -> void:
 	if is_dead or GameManager.game_state != "fight":

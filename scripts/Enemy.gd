@@ -14,9 +14,9 @@ var damage_timer: float = 0.0
 var is_dying: bool  = false
 var _orig_color := Color.WHITE
 
-# границы арены (совпадают с Arena ColorRect)
-const ARENA_MIN := Vector2(190, 60)
-const ARENA_MAX := Vector2(1090, 720)
+# Арена 1300x1300, центр (640, 390)
+const ARENA_MIN := Vector2(-10, -260)
+const ARENA_MAX := Vector2(1290, 1040)
 const HALF_E    := Vector2(16, 16)
 
 const DAMAGE_INTERVAL  := 0.5

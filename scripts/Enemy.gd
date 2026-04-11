@@ -12,7 +12,7 @@ var xp_reward: int = 3
 var mat_reward: int = 2
 var damage_timer: float = 0.0
 
-const DAMAGE_INTERVAL := 0.1  # damage player every N seconds on contact
+const DAMAGE_INTERVAL := 0.1
 const DROP_SCENE := preload("res://scenes/Drop.tscn")
 const FLOAT_TEXT_SCENE := preload("res://scenes/FloatText.tscn")
 
@@ -29,23 +29,23 @@ func _physics_process(delta: float) -> void:
 	_seek_player(delta)
 	_check_player_contact(delta)
 
-func _seek_player(delta: float) -> void:
-	var player := get_tree().get_first_node_in_group("player")
-	if not player:
+func _seek_player(_delta: float) -> void:
+	var player: Node2D = get_tree().get_first_node_in_group("player") as Node2D
+	if player == null:
 		return
-	var dir := (player.global_position - global_position).normalized()
+	var dir: Vector2 = (player.global_position - global_position).normalized()
 	velocity = dir * speed
 	move_and_slide()
 
 func _check_player_contact(delta: float) -> void:
-	var player := get_tree().get_first_node_in_group("player")
-	if not player:
+	var player: Node2D = get_tree().get_first_node_in_group("player") as Node2D
+	if player == null:
 		return
 	if global_position.distance_to(player.global_position) < 28.0:
 		damage_timer += delta
 		if damage_timer >= DAMAGE_INTERVAL:
 			damage_timer = 0.0
-			player.take_damage(damage * DAMAGE_INTERVAL)
+			player.call("take_damage", damage * DAMAGE_INTERVAL)
 	else:
 		damage_timer = 0.0
 
@@ -53,20 +53,18 @@ func take_hit(dmg: float) -> void:
 	hp -= dmg
 	_update_health_bar()
 	_show_damage_number(dmg)
-	
-	# Lifesteal
-	var ls := GameManager.player_stats["lifesteal"]
+
+	var ls: float = float(GameManager.player_stats["lifesteal"])
 	if ls > 0.0:
-		var player := get_tree().get_first_node_in_group("player")
-		if player:
-			player.heal(dmg * ls)
-	
-	# Flash white
+		var player: Node2D = get_tree().get_first_node_in_group("player") as Node2D
+		if player != null:
+			player.call("heal", dmg * ls)
+
 	sprite.color = Color.WHITE
 	await get_tree().create_timer(0.1).timeout
 	if is_instance_valid(self):
 		sprite.color = _get_color()
-	
+
 	if hp <= 0:
 		_die()
 
@@ -88,7 +86,7 @@ func _show_damage_number(dmg: float) -> void:
 	var ft := FLOAT_TEXT_SCENE.instantiate()
 	get_parent().add_child(ft)
 	ft.global_position = global_position + Vector2(0, -30)
-	ft.setup("-" + str(int(dmg)), Color.YELLOW)
+	ft.call("setup", "-" + str(int(dmg)), Color.YELLOW)
 
 func _update_health_bar() -> void:
 	if health_bar:
@@ -96,4 +94,4 @@ func _update_health_bar() -> void:
 		health_bar.visible = hp < max_hp
 
 func _get_color() -> Color:
-	return sprite.color  # overridden in subclasses
+	return sprite.color

@@ -117,24 +117,57 @@ anchor_bottom = 1.0
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-alignment = 1
 
 [node name="WaveLabel" type="Label" parent="Shop/Panel/VBox"]
 horizontal_alignment = 1
 text = "Волна 1 пройдена!"
 
-[node name="ItemsContainer" type="HBoxContainer" parent="Shop/Panel/VBox"]
+[node name="MatsLabel" type="Label" parent="Shop/Panel/VBox"]
+horizontal_alignment = 1
+text = "💜 Материалы: 0"
+
+[node name="Tabs" type="HBoxContainer" parent="Shop/Panel/VBox"]
 alignment = 1
+
+[node name="TabBodyBtn" type="Button" parent="Shop/Panel/VBox/Tabs"]
+text = "💪 Прокачка тела"
+custom_minimum_size = Vector2(180, 36)
+
+[node name="TabItemBtn" type="Button" parent="Shop/Panel/VBox/Tabs"]
+text = "🎒 Предметы"
+custom_minimum_size = Vector2(180, 36)
+
+[node name="Content" type="Control" parent="Shop/Panel/VBox"]
+size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 320)
+
+[node name="BodySection" type="ScrollContainer" parent="Shop/Panel/VBox/Content"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="BodyGrid" type="GridContainer" parent="Shop/Panel/VBox/Content/BodySection"]
+size_flags_horizontal = 3
+columns = 5
+
+[node name="ItemSection" type="ScrollContainer" parent="Shop/Panel/VBox/Content"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+visible = false
+
+[node name="ItemGrid" type="GridContainer" parent="Shop/Panel/VBox/Content/ItemSection"]
+size_flags_horizontal = 3
+columns = 4
 
 [node name="Footer" type="HBoxContainer" parent="Shop/Panel/VBox"]
 alignment = 1
 
-[node name="MatsLabel" type="Label" parent="Shop/Panel/VBox/Footer"]
-text = "Материалы: 0 💜"
-
 [node name="ContinueBtn" type="Button" parent="Shop/Panel/VBox/Footer"]
 text = "Следующая волна →"
 
+[connection signal="pressed" from="Shop/Panel/VBox/Tabs/TabBodyBtn" to="Shop" method="_on_tab_body"]
+[connection signal="pressed" from="Shop/Panel/VBox/Tabs/TabItemBtn" to="Shop" method="_on_tab_item"]
 [connection signal="pressed" from="Shop/Panel/VBox/Footer/ContinueBtn" to="Shop" method="_on_continue_pressed"]
 
 [node name="TitleScreen" type="CanvasLayer" parent="."]

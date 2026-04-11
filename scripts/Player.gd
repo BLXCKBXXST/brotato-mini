@@ -9,7 +9,6 @@ extends CharacterBody2D
 
 const BULLET_SCENE := preload("res://scenes/Bullet.tscn")
 
-# Арена 1300x1300
 const ARENA_MIN := Vector2(-10, -260)
 const ARENA_MAX := Vector2(1290, 1040)
 const HALF := Vector2(18, 18)
@@ -83,7 +82,13 @@ func _shoot(target: Node2D) -> void:
 
 func take_damage(amount: float) -> void:
 	if is_dead or GameManager.game_state != "fight": return
-	GameManager.player_stats["hp"] = float(GameManager.player_stats["hp"]) - amount
+	# Уклонение
+	if randf() < float(GameManager.player_stats["dodge"]):
+		return
+	# Броня
+	var armor: int = int(GameManager.player_stats.get("armor", 0))
+	var actual: float = maxf(amount - float(armor), 1.0)
+	GameManager.player_stats["hp"] = float(GameManager.player_stats["hp"]) - actual
 	if float(GameManager.player_stats["hp"]) <= 0.0:
 		GameManager.player_stats["hp"] = 0
 		is_dead = true

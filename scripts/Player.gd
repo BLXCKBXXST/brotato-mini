@@ -9,9 +9,9 @@ extends CharacterBody2D
 
 const BULLET_SCENE := preload("res://scenes/Bullet.tscn")
 
-# Арена 1296x950: начало (-8, -85), конец (1288, 865)
-const ARENA_MIN := Vector2(-8, -85)
-const ARENA_MAX := Vector2(1288, 865)
+# Арена 1300x1300
+const ARENA_MIN := Vector2(-10, -260)
+const ARENA_MAX := Vector2(1290, 1040)
 const HALF := Vector2(18, 18)
 
 var attack_cooldown: float = 0.0
@@ -40,8 +40,7 @@ func _handle_movement(_delta: float) -> void:
 		Input.get_axis("move_left", "move_right"),
 		Input.get_axis("move_up", "move_down")
 	)
-	if dir.length() > 0:
-		dir = dir.normalized()
+	if dir.length() > 0: dir = dir.normalized()
 	velocity = dir * float(GameManager.player_stats["speed"])
 	move_and_slide()
 
@@ -65,8 +64,7 @@ func _find_nearest_enemy() -> Node2D:
 	var best_dist: float = float(GameManager.player_stats["range"])
 	for e in enemies:
 		var node := e as Node2D
-		if node == null or not is_instance_valid(node):
-			continue
+		if node == null or not is_instance_valid(node): continue
 		var d := global_position.distance_to(node.global_position)
 		if d < best_dist:
 			best_dist = d
@@ -84,8 +82,7 @@ func _shoot(target: Node2D) -> void:
 	)
 
 func take_damage(amount: float) -> void:
-	if is_dead or GameManager.game_state != "fight":
-		return
+	if is_dead or GameManager.game_state != "fight": return
 	GameManager.player_stats["hp"] = float(GameManager.player_stats["hp"]) - amount
 	if float(GameManager.player_stats["hp"]) <= 0.0:
 		GameManager.player_stats["hp"] = 0

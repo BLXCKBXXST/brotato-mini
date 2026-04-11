@@ -15,17 +15,16 @@ const ENEMY_TYPES := [
 	{"base_hp": 110, "hp_per_wave": 22, "speed": 44,  "damage": 18, "xp": 14, "mat": 10, "color": Color(1.0, 0.27, 0.27)},
 ]
 
-# Арена x1.2
-const ARENA_MIN := Vector2(100, -6)
-const ARENA_MAX := Vector2(1180, 786)
+# Арена 1296x950
+const ARENA_MIN := Vector2(-8, -85)
+const ARENA_MAX := Vector2(1288, 865)
 
-const VIEW_HALF   := Vector2(640, 360)
+const VIEW_HALF    := Vector2(640, 360)
 const SPAWN_MARGIN := 80.0
 
 var arena_rect: Rect2 = Rect2()
 
 func start_wave(rect: Rect2) -> void:
-	print("[WaveManager] start_wave, wave=", GameManager.wave)
 	arena_rect = rect
 	spawn_timer.wait_time = GameManager.get_spawn_interval()
 	spawn_timer.start()
@@ -42,14 +41,12 @@ func _on_spawn_timer_timeout() -> void:
 		_prepare_spawn()
 
 func _on_wave_timer_timeout() -> void:
-	print("[WaveManager] wave timer done")
 	stop_wave()
 	wave_ended.emit()
 
 func _prepare_spawn() -> void:
 	var pos := _random_offscreen_pos()
-
-	var warning := _make_warning()
+	var warning := SpawnIndicator.new()
 	get_parent().get_node("GameObjects").add_child(warning)
 	warning.global_position = pos
 
@@ -63,9 +60,6 @@ func _prepare_spawn() -> void:
 			return
 		_do_spawn(pos, t)
 	)
-
-func _make_warning() -> Node2D:
-	return SpawnIndicator.new()
 
 func _do_spawn(pos: Vector2, t: Dictionary) -> void:
 	var enemy := ENEMY_SCENE.instantiate()
@@ -102,47 +96,32 @@ func _random_offscreen_pos() -> Vector2:
 	var side := randi() % 4
 	var x: float
 	var y: float
-
 	match side:
-		0:  # левее экрана
-			x = randf_range(maxf(ax1, cam_left - SPAWN_MARGIN * 2.0), minf(ax2, cam_left))
-			y = randf_range(ay1, ay2)
-		1:  # правее экрана
-			x = randf_range(maxf(ax1, cam_right), minf(ax2, cam_right + SPAWN_MARGIN * 2.0))
-			y = randf_range(ay1, ay2)
-		2:  # выше экрана
-			x = randf_range(ax1, ax2)
-			y = randf_range(maxf(ay1, cam_top - SPAWN_MARGIN * 2.0), minf(ay2, cam_top))
-		3:  # ниже экрана
-			x = randf_range(ax1, ax2)
-			y = randf_range(maxf(ay1, cam_bottom), minf(ay2, cam_bottom + SPAWN_MARGIN * 2.0))
+		0: x = randf_range(maxf(ax1, cam_left - SPAWN_MARGIN * 2.0), minf(ax2, cam_left));   y = randf_range(ay1, ay2)
+		1: x = randf_range(maxf(ax1, cam_right), minf(ax2, cam_right + SPAWN_MARGIN * 2.0)); y = randf_range(ay1, ay2)
+		2: x = randf_range(ax1, ax2); y = randf_range(maxf(ay1, cam_top - SPAWN_MARGIN * 2.0), minf(ay2, cam_top))
+		3: x = randf_range(ax1, ax2); y = randf_range(maxf(ay1, cam_bottom), minf(ay2, cam_bottom + SPAWN_MARGIN * 2.0))
 
 	return Vector2(clampf(x, ax1, ax2), clampf(y, ay1, ay2))
 
 
 class SpawnIndicator extends Node2D:
 	signal finished
-
 	const DURATION := 0.85
 	const RADIUS   := 22.0
 	const BLINK_HZ := 7.0
-
 	var _elapsed := 0.0
 	var _alpha   := 0.0
 	var _done    := false
 
 	func _draw() -> void:
-		var fill := Color(1.0, 0.15, 0.15, _alpha)
-		draw_circle(Vector2.ZERO, RADIUS, fill)
-		var outline := Color(1.0, 0.4, 0.4, minf(_alpha * 1.8 + 0.1, 1.0))
-		draw_arc(Vector2.ZERO, RADIUS, 0.0, TAU, 32, outline, 2.5)
+		draw_circle(Vector2.ZERO, RADIUS, Color(1.0, 0.15, 0.15, _alpha))
+		draw_arc(Vector2.ZERO, RADIUS, 0.0, TAU, 32, Color(1.0, 0.4, 0.4, minf(_alpha * 1.8 + 0.1, 1.0)), 2.5)
 
 	func _process(delta: float) -> void:
-		if _done:
-			return
+		if _done: return
 		_elapsed += delta
-		var t := _elapsed / DURATION
-		_alpha = abs(sin(_elapsed * BLINK_HZ * PI)) * lerpf(0.3, 0.9, t)
+		_alpha = abs(sin(_elapsed * BLINK_HZ * PI)) * lerpf(0.3, 0.9, _elapsed / DURATION)
 		queue_redraw()
 		if _elapsed >= DURATION:
 			_done = true

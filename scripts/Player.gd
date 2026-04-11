@@ -9,16 +9,15 @@ extends CharacterBody2D
 
 const BULLET_SCENE := preload("res://scenes/Bullet.tscn")
 
-# Арена x1.2: начало (100, -6), конец (1180, 786)
-const ARENA_MIN := Vector2(100, -6)
-const ARENA_MAX := Vector2(1180, 786)
+# Арена 1296x950: начало (-8, -85), конец (1288, 865)
+const ARENA_MIN := Vector2(-8, -85)
+const ARENA_MAX := Vector2(1288, 865)
 const HALF := Vector2(18, 18)
 
 var attack_cooldown: float = 0.0
 var is_dead: bool = false
 
 func _ready() -> void:
-	print("[Player] _ready OK, pos=", global_position)
 	_sync_stats()
 	if camera:
 		camera.enabled = true
@@ -91,7 +90,6 @@ func take_damage(amount: float) -> void:
 	if float(GameManager.player_stats["hp"]) <= 0.0:
 		GameManager.player_stats["hp"] = 0
 		is_dead = true
-		print("[Player] died!")
 		GameManager.player_died.emit()
 
 func heal(amount: float) -> void:

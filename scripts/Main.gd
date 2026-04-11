@@ -9,9 +9,9 @@ extends Node2D
 @onready var gameover_screen: CanvasLayer  = $GameOverScreen
 @onready var win_screen: CanvasLayer       = $WinScreen
 
-# Арена x1.2 от оригинальной: было 900x660, стало 1080x792
-# Центр (640, 390), начало (100, -6)
-const ARENA_RECT := Rect2(Vector2(100, -6), Vector2(1080, 792))
+# Арена x1.2 ещё: было 1080x792, стало 1296x950
+# Центр (640, 390), начало (-8, -85)
+const ARENA_RECT := Rect2(Vector2(-8, -85), Vector2(1296, 950))
 var wave_timer_ref: float = 0.0
 
 func _ready() -> void:
@@ -25,18 +25,12 @@ func _ready() -> void:
 	if start_btn:
 		if not start_btn.pressed.is_connected(start_game):
 			start_btn.pressed.connect(start_game)
-		print("[Main] StartBtn connected")
-	else:
-		print("[Main] ERROR: StartBtn not found!")
-
 	if restart_btn:
 		if not restart_btn.pressed.is_connected(start_game):
 			restart_btn.pressed.connect(start_game)
-
 	if win_btn:
 		if not win_btn.pressed.is_connected(start_game):
 			win_btn.pressed.connect(start_game)
-
 	if cont_btn:
 		if not cont_btn.pressed.is_connected(_on_shop_continue):
 			cont_btn.pressed.connect(_on_shop_continue)
@@ -45,7 +39,6 @@ func _ready() -> void:
 	GameManager.game_won.connect(_show_win)
 	wave_manager.wave_ended.connect(_on_wave_ended)
 
-	print("[Main] _ready done, showing title")
 	_show_title()
 
 func _process(delta: float) -> void:
@@ -55,12 +48,10 @@ func _process(delta: float) -> void:
 		hud.update_hud(wave_timer_ref)
 
 func start_game() -> void:
-	print("[Main] start_game called!")
 	GameManager.reset()
 	_start_wave()
 
 func _start_wave() -> void:
-	print("[Main] _start_wave, wave=", GameManager.wave)
 	GameManager.game_state = "fight"
 	wave_timer_ref = GameManager.get_wave_duration()
 	for node in get_tree().get_nodes_in_group("enemies"):
@@ -75,15 +66,12 @@ func _start_wave() -> void:
 	win_screen.hide()
 	shop.hide()
 	hud.show()
-	print("[Main] wave started OK")
 
 func _on_wave_ended() -> void:
-	print("[Main] wave ended -> shop")
 	GameManager.game_state = "shop"
 	shop.open_shop()
 
 func _on_shop_continue() -> void:
-	print("[Main] shop continue")
 	GameManager.wave += 1
 	if GameManager.wave > GameManager.TOTAL_WAVES:
 		_show_win()
@@ -92,7 +80,6 @@ func _on_shop_continue() -> void:
 	_start_wave()
 
 func _on_player_died() -> void:
-	print("[Main] player died on wave ", GameManager.wave)
 	GameManager.game_state = "gameover"
 	wave_manager.stop_wave()
 	gameover_screen.get_node("Panel/VBox/WaveLabel").text  = "Ты дошёл до волны %d" % GameManager.wave
@@ -111,7 +98,6 @@ func _show_title() -> void:
 	title_screen.show()
 
 func _show_win() -> void:
-	print("[Main] player won!")
 	GameManager.game_state = "win"
 	wave_manager.stop_wave()
 	win_screen.get_node("Panel/VBox/Stats/KillsVal").text = str(GameManager.player_stats["total_kills"])

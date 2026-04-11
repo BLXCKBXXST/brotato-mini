@@ -5,13 +5,14 @@ extends CharacterBody2D
 @onready var attack_timer: Timer         = $AttackTimer
 @onready var collision: CollisionShape2D = $Collision
 @onready var range_indicator: Node2D     = $RangeIndicator
+@onready var camera: Camera2D            = $Camera2D
 
 const BULLET_SCENE := preload("res://scenes/Bullet.tscn")
 
-# поля арены (должны совпадать с ARENA_RECT в Main.gd)
-const ARENA_MIN := Vector2(208, 78)
-const ARENA_MAX := Vector2(1072, 702)
-const HALF := Vector2(18, 18)  # половина спрайта игрока
+# Арена в 2 раза больше: было 190..1090 x 60..720, стало -260..1540 x -270..1050
+const ARENA_MIN := Vector2(-260, -270)
+const ARENA_MAX := Vector2(1540, 1050)
+const HALF := Vector2(18, 18)
 
 var attack_cooldown: float = 0.0
 var is_dead: bool = false
@@ -19,6 +20,10 @@ var is_dead: bool = false
 func _ready() -> void:
 	print("[Player] _ready OK, pos=", global_position)
 	_sync_stats()
+	# Камера следит за игроком
+	if camera:
+		camera.enabled = true
+		camera.make_current()
 
 func _sync_stats() -> void:
 	is_dead = false

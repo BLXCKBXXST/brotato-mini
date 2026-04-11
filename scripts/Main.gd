@@ -9,13 +9,14 @@ extends Node2D
 @onready var gameover_screen: CanvasLayer  = $GameOverScreen
 @onready var win_screen: CanvasLayer       = $WinScreen
 
-const ARENA_RECT := Rect2(Vector2(190, 60), Vector2(900, 660))
+# Арена увеличена в 2 раза: было 900x660, стало 1800x1320
+# Центр арены тот же (640, 390), поэтому смещаем начало
+const ARENA_RECT := Rect2(Vector2(-260, -270), Vector2(1800, 1320))
 var wave_timer_ref: float = 0.0
 
 func _ready() -> void:
 	print("[Main] _ready start")
 
-	# --- подключаем кнопки через код, не через .tscn ---
 	var start_btn  := title_screen.get_node("Panel/VBox/StartBtn") as Button
 	var restart_btn := gameover_screen.get_node("Panel/VBox/RestartBtn") as Button
 	var win_btn    := win_screen.get_node("Panel/VBox/RestartBtn") as Button
@@ -40,7 +41,6 @@ func _ready() -> void:
 		if not cont_btn.pressed.is_connected(_on_shop_continue):
 			cont_btn.pressed.connect(_on_shop_continue)
 
-	# --- игровые сигналы ---
 	GameManager.player_died.connect(_on_player_died)
 	GameManager.game_won.connect(_show_win)
 	wave_manager.wave_ended.connect(_on_wave_ended)

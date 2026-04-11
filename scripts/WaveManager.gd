@@ -15,8 +15,14 @@ const ENEMY_TYPES := [
 	{"base_hp": 110, "hp_per_wave": 22, "speed": 44,  "damage": 18, "xp": 14, "mat": 10, "color": Color(1.0, 0.27, 0.27)},
 ]
 
-const ARENA_MIN := Vector2(210, 80)
-const ARENA_MAX := Vector2(1070, 710)
+# Арена в 2 раза больше
+const ARENA_MIN := Vector2(-260, -270)
+const ARENA_MAX := Vector2(1540, 1050)
+
+# Размер видимой области камеры (viewport по умолчанию 1280x720 / zoom=1)
+const VIEW_HALF := Vector2(640, 360)
+# Отступ от края камеры, за которым будет спаун
+const SPAWN_MARGIN := 80.0
 
 var arena_rect: Rect2 = Rect2()
 
@@ -44,10 +50,9 @@ func _on_wave_timer_timeout() -> void:
 	wave_ended.emit()
 
 func _prepare_spawn() -> void:
-	var pos := _random_arena_pos()
+	var pos := _random_offscreen_pos()
 	print("[WaveManager] warning at ", pos)
 
-	# Создаём Node2D с рисованием прямо в коде — без .tscn
 	var warning := _make_warning()
 	get_parent().get_node("GameObjects").add_child(warning)
 	warning.global_position = pos
@@ -65,7 +70,6 @@ func _prepare_spawn() -> void:
 	)
 
 func _make_warning() -> Node2D:
-	# Создаём индикатор через код (GDScript не позволяет орфан-объект со сценой)
 	var node := SpawnIndicator.new()
 	return node
 
@@ -83,10 +87,54 @@ func _do_spawn(pos: Vector2, t: Dictionary) -> void:
 	enemy.get_node("Sprite").color = t["color"]
 	enemy.global_position = pos
 
-func _random_arena_pos() -> Vector2:
+# Возвращает позицию ВНЕ экрана камеры, но ВНУТРИ арены
+# Получаем позицию игрока через группу
+func _random_offscreen_pos() -> Vector2:
+	var player_pos := Vector2(640, 390)  # fallback — центр арены
+	var players := get_tree().get_nodes_in_group("player")
+	if players.size() > 0:
+		var p := players[0] as Node2D
+		if p != null and is_instance_valid(p):
+			player_pos = p.global_position
+
+	# Границы камеры с учётом отступа для спауна за экраном
+	var cam_left   := player_pos.x - VIEW_HALF.x - SPAWN_MARGIN
+	var cam_right  := player_pos.x + VIEW_HALF.x + SPAWN_MARGIN
+	var cam_top    := player_pos.y - VIEW_HALF.y - SPAWN_MARGIN
+	var cam_bottom := player_pos.y + VIEW_HALF.y + SPAWN_MARGIN
+
+	# Клампим границы зоны спауна к пределам арены
+	var ax1 := ARENA_MIN.x + 30.0
+	var ax2 := ARENA_MAX.x - 30.0
+	var ay1 := ARENA_MIN.y + 30.0
+	var ay2 := ARENA_MAX.y - 30.0
+
+	# Выбираем одну из 4 сторон экрана для спауна
+	var side := randi() % 4
+	var x: float
+	var y: float
+
+	match side:
+		0:  # левее экрана
+			x = randf_range(maxf(ax1, cam_left - SPAWN_MARGIN * 2.0), minf(ax2, cam_left))
+			y = randf_range(ay1, ay2)
+		1:  # правее экрана
+			x = randf_range(maxf(ax1, cam_right), minf(ax2, cam_right + SPAWN_MARGIN * 2.0))
+			y = randf_range(ay1, ay2)
+		2:  # выше экрана
+			x = randf_range(ax1, ax2)
+			y = randf_range(maxf(ay1, cam_top - SPAWN_MARGIN * 2.0), minf(ay2, cam_top))
+		3:  # ниже экрана
+			x = randf_range(ax1, ax2)
+			y = randf_range(maxf(ay1, cam_bottom), minf(ay2, cam_bottom + SPAWN_MARGIN * 2.0))
+
+	# Если после клампинга диапазон вырожден (игрок у края арены) — случайная позиция в арене
+	if x == INF or y == INF or is_nan(x) or is_nan(y):
+		return Vector2(randf_range(ax1, ax2), randf_range(ay1, ay2))
+
 	return Vector2(
-		randf_range(ARENA_MIN.x + 30.0, ARENA_MAX.x - 30.0),
-		randf_range(ARENA_MIN.y + 30.0, ARENA_MAX.y - 30.0)
+		clampf(x, ax1, ax2),
+		clampf(y, ay1, ay2)
 	)
 
 

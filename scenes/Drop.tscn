@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3 uid="uid://drop"]
+
+[ext_resource type="Script" path="res://scripts/Drop.gd" id="1"]
+
+[node name="Drop" type="RigidBody2D" groups=["drops"]]
+script = ExtResource("1")
+gravity_scale = 0.0
+linear_damp = 2.0
+
+[node name="Sprite" type="ColorRect" parent="."]
+offset_left = -7.0
+offset_top = -7.0
+offset_right = 7.0
+offset_bottom = 7.0
+color = Color(0.75, 0.52, 0.99, 1)
+
+[node name="Collision" type="CollisionShape2D" parent="."]

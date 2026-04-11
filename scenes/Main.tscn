@@ -1,0 +1,243 @@
+[gd_scene load_steps=7 format=3 uid="uid://main"]
+
+[ext_resource type="Script" path="res://scripts/Main.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/WaveManager.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/HUD.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/Shop.gd" id="4"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1")
+
+[node name="Arena" type="ColorRect" parent="."]
+offset_left = 190.0
+offset_top = 60.0
+offset_right = 1090.0
+offset_bottom = 720.0
+color = Color(0.07, 0.07, 0.09, 1)
+
+[node name="ArenaGrid" type="Node2D" parent="Arena"]
+
+[node name="ArenaBorder" type="NinePatchRect" parent="Arena"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="GameObjects" type="Node2D" parent="."]
+
+[node name="Player" type="CharacterBody2D" parent="GameObjects" groups=["player"]]
+script = ExtResource("1")
+position = Vector2(640, 360)
+
+[node name="Sprite" type="ColorRect" parent="GameObjects/Player"]
+offset_left = -18.0
+offset_top = -18.0
+offset_right = 18.0
+offset_bottom = 18.0
+color = Color(0.96, 0.78, 0.26, 1)
+
+[node name="Collision" type="CollisionShape2D" parent="GameObjects/Player"]
+
+[node name="RangeIndicator" type="Node2D" parent="GameObjects/Player"]
+
+[node name="WaveManager" type="Node" parent="."]
+script = ExtResource("2")
+
+[node name="SpawnTimer" type="Timer" parent="WaveManager"]
+wait_time = 1.2
+autostart = false
+
+[node name="WaveTimer" type="Timer" parent="WaveManager"]
+wait_time = 20.0
+autostart = false
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("3")
+
+[node name="TopBar" type="HBoxContainer" parent="HUD"]
+anchors_preset = 1
+anchor_right = 1.0
+custom_minimum_size = Vector2(0, 44)
+
+[node name="HPSection" type="HBoxContainer" parent="HUD/TopBar"]
+
+[node name="HPIcon" type="Label" parent="HUD/TopBar/HPSection"]
+text = "❤️"
+
+[node name="HPBar" type="ProgressBar" parent="HUD/TopBar/HPSection"]
+custom_minimum_size = Vector2(120, 10)
+value = 100.0
+
+[node name="HPLabel" type="Label" parent="HUD/TopBar/HPSection"]
+text = "100 / 100"
+
+[node name="XPSection" type="HBoxContainer" parent="HUD/TopBar"]
+
+[node name="XPIcon" type="Label" parent="HUD/TopBar/XPSection"]
+text = "⚡"
+
+[node name="XPBar" type="ProgressBar" parent="HUD/TopBar/XPSection"]
+custom_minimum_size = Vector2(100, 10)
+value = 0.0
+
+[node name="LevelLabel" type="Label" parent="HUD/TopBar/XPSection"]
+text = "Lv 1"
+
+[node name="MatsLabel" type="Label" parent="HUD/TopBar"]
+text = "💜 0"
+
+[node name="WaveLabel" type="Label" parent="HUD/TopBar"]
+size_flags_horizontal = 8
+text = "Волна 1 / 20"
+
+[node name="TimerLabel" type="Label" parent="HUD/TopBar"]
+text = "20s"
+
+[node name="Shop" type="CanvasLayer" parent="."]
+script = ExtResource("4")
+
+[node name="Panel" type="PanelContainer" parent="Shop"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBox" type="VBoxContainer" parent="Shop/Panel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+alignment = 1
+
+[node name="WaveLabel" type="Label" parent="Shop/Panel/VBox"]
+horizontal_alignment = 1
+text = "Волна 1 пройдена!"
+
+[node name="ItemsContainer" type="HBoxContainer" parent="Shop/Panel/VBox"]
+alignment = 1
+
+[node name="Footer" type="HBoxContainer" parent="Shop/Panel/VBox"]
+alignment = 1
+
+[node name="MatsLabel" type="Label" parent="Shop/Panel/VBox/Footer"]
+text = "Материалы: 0 💜"
+
+[node name="ContinueBtn" type="Button" parent="Shop/Panel/VBox/Footer"]
+text = "Следующая волна →"
+
+[node name="TitleScreen" type="CanvasLayer" parent="."]
+
+[node name="Panel" type="PanelContainer" parent="TitleScreen"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBox" type="VBoxContainer" parent="TitleScreen/Panel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+alignment = 1
+
+[node name="Title" type="Label" parent="TitleScreen/Panel/VBox"]
+horizontal_alignment = 1
+text = "🥔 BROTATO MINI"
+
+[node name="Subtitle" type="Label" parent="TitleScreen/Panel/VBox"]
+horizontal_alignment = 1
+text = "roguelite arena · 20 волн выживания"
+
+[node name="StartBtn" type="Button" parent="TitleScreen/Panel/VBox"]
+text = "▶ Начать игру"
+
+[node name="Controls" type="Label" parent="TitleScreen/Panel/VBox"]
+horizontal_alignment = 1
+text = "WASD / Стрелки — движение\nАвто-стрельба по ближайшему врагу"
+
+[node name="GameOverScreen" type="CanvasLayer" parent="."]
+
+[node name="Panel" type="PanelContainer" parent="GameOverScreen"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBox" type="VBoxContainer" parent="GameOverScreen/Panel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+alignment = 1
+
+[node name="Title" type="Label" parent="GameOverScreen/Panel/VBox"]
+horizontal_alignment = 1
+text = "💀 GAME OVER"
+
+[node name="WaveLabel" type="Label" parent="GameOverScreen/Panel/VBox"]
+horizontal_alignment = 1
+text = "Ты дошёл до волны 1"
+
+[node name="Stats" type="GridContainer" parent="GameOverScreen/Panel/VBox"]
+columns = 2
+
+[node name="KillsLbl" type="Label" parent="GameOverScreen/Panel/VBox/Stats"]
+text = "Убито"
+
+[node name="KillsVal" type="Label" parent="GameOverScreen/Panel/VBox/Stats"]
+text = "0"
+
+[node name="DmgLbl" type="Label" parent="GameOverScreen/Panel/VBox/Stats"]
+text = "Урон"
+
+[node name="DmgVal" type="Label" parent="GameOverScreen/Panel/VBox/Stats"]
+text = "0"
+
+[node name="MatsLbl" type="Label" parent="GameOverScreen/Panel/VBox/Stats"]
+text = "Материалы"
+
+[node name="MatsVal" type="Label" parent="GameOverScreen/Panel/VBox/Stats"]
+text = "0"
+
+[node name="LvlLbl" type="Label" parent="GameOverScreen/Panel/VBox/Stats"]
+text = "Уровень"
+
+[node name="LvlVal" type="Label" parent="GameOverScreen/Panel/VBox/Stats"]
+text = "1"
+
+[node name="RestartBtn" type="Button" parent="GameOverScreen/Panel/VBox"]
+text = "↩ Снова"
+
+[node name="WinScreen" type="CanvasLayer" parent="."]
+
+[node name="Panel" type="PanelContainer" parent="WinScreen"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBox" type="VBoxContainer" parent="WinScreen/Panel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+alignment = 1
+
+[node name="Title" type="Label" parent="WinScreen/Panel/VBox"]
+horizontal_alignment = 1
+text = "🏆 ПОБЕДА!"
+
+[node name="Sub" type="Label" parent="WinScreen/Panel/VBox"]
+horizontal_alignment = 1
+text = "Все 20 волн пройдены!"
+
+[node name="Stats" type="GridContainer" parent="WinScreen/Panel/VBox"]
+columns = 2
+
+[node name="KillsLbl" type="Label" parent="WinScreen/Panel/VBox/Stats"]
+text = "Убито"
+
+[node name="KillsVal" type="Label" parent="WinScreen/Panel/VBox/Stats"]
+text = "0"
+
+[node name="DmgLbl" type="Label" parent="WinScreen/Panel/VBox/Stats"]
+text = "Урон"
+
+[node name="DmgVal" type="Label" parent="WinScreen/Panel/VBox/Stats"]
+text = "0"
+
+[node name="RestartBtn" type="Button" parent="WinScreen/Panel/VBox"]
+text = "↩ Снова"

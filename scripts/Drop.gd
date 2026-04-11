@@ -10,19 +10,17 @@ func _physics_process(delta: float) -> void:
 	if lifetime <= 0:
 		queue_free()
 		return
-	
-	var player := get_tree().get_first_node_in_group("player")
-	if not player:
+
+	var player: Node2D = get_tree().get_first_node_in_group("player") as Node2D
+	if player == null:
 		return
-	
-	var dist := global_position.distance_to(player.global_position)
-	
-	# Attract toward player when close
+
+	var dist: float = global_position.distance_to(player.global_position)
+
 	if dist < ATTRACT_RADIUS:
-		var dir := (player.global_position - global_position).normalized()
+		var dir: Vector2 = (player.global_position - global_position).normalized()
 		apply_central_force(dir * ATTRACT_FORCE)
-	
-	# Pickup
+
 	if dist < 22.0:
 		GameManager.player_stats["materials"] += 1
 		queue_free()

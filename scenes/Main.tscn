@@ -1,9 +1,10 @@
-[gd_scene load_steps=7 format=3 uid="uid://main"]
+[gd_scene load_steps=8 format=3 uid="uid://main"]
 
 [ext_resource type="Script" path="res://scripts/Main.gd" id="1"]
-[ext_resource type="Script" path="res://scripts/WaveManager.gd" id="2"]
-[ext_resource type="Script" path="res://scripts/HUD.gd" id="3"]
-[ext_resource type="Script" path="res://scripts/Shop.gd" id="4"]
+[ext_resource type="Script" path="res://scripts/Player.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/WaveManager.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/HUD.gd" id="4"]
+[ext_resource type="Script" path="res://scripts/Shop.gd" id="5"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1")
@@ -15,19 +16,10 @@ offset_right = 1090.0
 offset_bottom = 720.0
 color = Color(0.07, 0.07, 0.09, 1)
 
-[node name="ArenaGrid" type="Node2D" parent="Arena"]
-
-[node name="ArenaBorder" type="NinePatchRect" parent="Arena"]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
 [node name="GameObjects" type="Node2D" parent="."]
 
 [node name="Player" type="CharacterBody2D" parent="GameObjects" groups=["player"]]
-script = ExtResource("1")
+script = ExtResource("2")
 position = Vector2(640, 360)
 
 [node name="Sprite" type="ColorRect" parent="GameObjects/Player"]
@@ -42,7 +34,7 @@ color = Color(0.96, 0.78, 0.26, 1)
 [node name="RangeIndicator" type="Node2D" parent="GameObjects/Player"]
 
 [node name="WaveManager" type="Node" parent="."]
-script = ExtResource("2")
+script = ExtResource("3")
 
 [node name="SpawnTimer" type="Timer" parent="WaveManager"]
 wait_time = 1.2
@@ -52,8 +44,11 @@ autostart = false
 wait_time = 20.0
 autostart = false
 
+[connection signal="timeout" from="WaveManager/SpawnTimer" to="WaveManager" method="_on_spawn_timer_timeout"]
+[connection signal="timeout" from="WaveManager/WaveTimer" to="WaveManager" method="_on_wave_timer_timeout"]
+
 [node name="HUD" type="CanvasLayer" parent="."]
-script = ExtResource("3")
+script = ExtResource("4")
 
 [node name="TopBar" type="HBoxContainer" parent="HUD"]
 anchors_preset = 1
@@ -95,7 +90,7 @@ text = "Волна 1 / 20"
 text = "20s"
 
 [node name="Shop" type="CanvasLayer" parent="."]
-script = ExtResource("4")
+script = ExtResource("5")
 
 [node name="Panel" type="PanelContainer" parent="Shop"]
 anchors_preset = 15
@@ -124,6 +119,8 @@ text = "Материалы: 0 💜"
 [node name="ContinueBtn" type="Button" parent="Shop/Panel/VBox/Footer"]
 text = "Следующая волна →"
 
+[connection signal="pressed" from="Shop/Panel/VBox/Footer/ContinueBtn" to="Shop" method="_on_continue_pressed"]
+
 [node name="TitleScreen" type="CanvasLayer" parent="."]
 
 [node name="Panel" type="PanelContainer" parent="TitleScreen"]
@@ -151,6 +148,8 @@ text = "▶ Начать игру"
 [node name="Controls" type="Label" parent="TitleScreen/Panel/VBox"]
 horizontal_alignment = 1
 text = "WASD / Стрелки — движение\nАвто-стрельба по ближайшему врагу"
+
+[connection signal="pressed" from="TitleScreen/Panel/VBox/StartBtn" to="Main" method="start_game"]
 
 [node name="GameOverScreen" type="CanvasLayer" parent="."]
 
@@ -203,6 +202,8 @@ text = "1"
 [node name="RestartBtn" type="Button" parent="GameOverScreen/Panel/VBox"]
 text = "↩ Снова"
 
+[connection signal="pressed" from="GameOverScreen/Panel/VBox/RestartBtn" to="Main" method="start_game"]
+
 [node name="WinScreen" type="CanvasLayer" parent="."]
 
 [node name="Panel" type="PanelContainer" parent="WinScreen"]
@@ -241,3 +242,5 @@ text = "0"
 
 [node name="RestartBtn" type="Button" parent="WinScreen/Panel/VBox"]
 text = "↩ Снова"
+
+[connection signal="pressed" from="WinScreen/Panel/VBox/RestartBtn" to="Main" method="start_game"]

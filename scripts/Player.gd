@@ -9,9 +9,9 @@ extends CharacterBody2D
 
 const BULLET_SCENE := preload("res://scenes/Bullet.tscn")
 
-# Арена в 2 раза больше: было 190..1090 x 60..720, стало -260..1540 x -270..1050
-const ARENA_MIN := Vector2(-260, -270)
-const ARENA_MAX := Vector2(1540, 1050)
+# Арена x1.2: начало (100, -6), конец (1180, 786)
+const ARENA_MIN := Vector2(100, -6)
+const ARENA_MAX := Vector2(1180, 786)
 const HALF := Vector2(18, 18)
 
 var attack_cooldown: float = 0.0
@@ -20,7 +20,6 @@ var is_dead: bool = false
 func _ready() -> void:
 	print("[Player] _ready OK, pos=", global_position)
 	_sync_stats()
-	# Камера следит за игроком
 	if camera:
 		camera.enabled = true
 		camera.make_current()

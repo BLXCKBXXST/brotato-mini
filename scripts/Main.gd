@@ -9,9 +9,9 @@ extends Node2D
 @onready var gameover_screen: CanvasLayer  = $GameOverScreen
 @onready var win_screen: CanvasLayer       = $WinScreen
 
-# Арена увеличена в 2 раза: было 900x660, стало 1800x1320
-# Центр арены тот же (640, 390), поэтому смещаем начало
-const ARENA_RECT := Rect2(Vector2(-260, -270), Vector2(1800, 1320))
+# Арена x1.2 от оригинальной: было 900x660, стало 1080x792
+# Центр (640, 390), начало (100, -6)
+const ARENA_RECT := Rect2(Vector2(100, -6), Vector2(1080, 792))
 var wave_timer_ref: float = 0.0
 
 func _ready() -> void:

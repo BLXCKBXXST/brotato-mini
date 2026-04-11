@@ -48,7 +48,7 @@ func reset() -> void:
 		"total_damage": 0.0,
 	}
 
-gunc get_wave_duration() -> float:
+func get_wave_duration() -> float:
 	return minf(20.0 + wave * 3.0, 60.0)
 
 func get_spawn_interval() -> float:

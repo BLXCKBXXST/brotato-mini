@@ -18,6 +18,7 @@ const ENEMY_TYPES := [
 var arena_rect: Rect2 = Rect2()
 
 func start_wave(rect: Rect2) -> void:
+	print("[WaveManager] start_wave, wave=", GameManager.wave, " interval=", GameManager.get_spawn_interval())
 	arena_rect = rect
 	spawn_timer.wait_time = GameManager.get_spawn_interval()
 	spawn_timer.start()
@@ -25,32 +26,34 @@ func start_wave(rect: Rect2) -> void:
 	wave_timer.start()
 
 func stop_wave() -> void:
+	print("[WaveManager] stop_wave")
 	spawn_timer.stop()
 	wave_timer.stop()
 
 func _on_spawn_timer_timeout() -> void:
 	var count: int = 1 + int(float(GameManager.wave) / 6.0)
+	print("[WaveManager] spawning ", count, " enemies")
 	for i in range(count):
 		_spawn_enemy()
 
 func _on_wave_timer_timeout() -> void:
+	print("[WaveManager] wave timer done, emitting wave_ended")
 	stop_wave()
 	wave_ended.emit()
 
 func _spawn_enemy() -> void:
 	var enemy := ENEMY_SCENE.instantiate()
 	get_parent().add_child(enemy)
-
 	var available_types: Array = ENEMY_TYPES.slice(0, 3)
 	if GameManager.wave >= 5:
 		available_types = ENEMY_TYPES.duplicate()
-
 	var t: Dictionary = available_types[randi() % available_types.size()]
 	var hp: float = float(t["base_hp"]) + float(t["hp_per_wave"]) * float(GameManager.wave)
 	enemy.setup(hp, float(t["speed"]) + float(GameManager.wave) * 2.0,
 		float(t["damage"]), int(t["xp"]), int(t["mat"]))
 	enemy.get_node("Sprite").color = t["color"]
 	enemy.global_position = _random_spawn_pos()
+	print("[WaveManager] enemy spawned at ", enemy.global_position)
 
 func _random_spawn_pos() -> Vector2:
 	var side: int = randi() % 4

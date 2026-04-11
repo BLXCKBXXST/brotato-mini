@@ -11,12 +11,17 @@ const BULLET_SCENE := preload("res://scenes/Bullet.tscn")
 var attack_cooldown: float = 0.0
 
 func _ready() -> void:
+	print("[Player] _ready OK, pos=", global_position)
 	_sync_stats()
 
 func _sync_stats() -> void:
-	attack_cooldown = 1.0 / GameManager.player_stats["attack_speed"]
+	attack_cooldown = 1.0 / float(GameManager.player_stats["attack_speed"])
+	print("[Player] stats synced, attack_cooldown=", attack_cooldown)
 
 func _physics_process(delta: float) -> void:
+	if GameManager.game_state != "fight":
+		velocity = Vector2.ZERO
+		return
 	_handle_movement(delta)
 	_handle_shooting(delta)
 
@@ -36,6 +41,8 @@ func _handle_shooting(delta: float) -> void:
 		if target != null:
 			_shoot(target)
 			attack_cooldown = 1.0 / float(GameManager.player_stats["attack_speed"])
+		else:
+			attack_cooldown = 0.1
 
 func _find_nearest_enemy() -> Node2D:
 	var enemies: Array = get_tree().get_nodes_in_group("enemies")
@@ -56,20 +63,17 @@ func _shoot(target: Node2D) -> void:
 	get_parent().add_child(bullet)
 	bullet.global_position = global_position
 	var shoot_dir: Vector2 = target.global_position - global_position
-	bullet.setup(
-		shoot_dir,
-		int(GameManager.player_stats["damage"]),
-		int(GameManager.player_stats["pierce"])
-	)
+	bullet.call("setup", shoot_dir, int(GameManager.player_stats["damage"]), int(GameManager.player_stats["pierce"]))
 
 func take_damage(amount: float) -> void:
 	GameManager.player_stats["hp"] -= amount
-	if GameManager.player_stats["hp"] <= 0:
+	if float(GameManager.player_stats["hp"]) <= 0:
 		GameManager.player_stats["hp"] = 0
+		print("[Player] died!")
 		GameManager.player_died.emit()
 
 func heal(amount: float) -> void:
 	GameManager.player_stats["hp"] = minf(
-		GameManager.player_stats["hp"] + amount,
-		GameManager.player_stats["max_hp"]
+		float(GameManager.player_stats["hp"]) + amount,
+		float(GameManager.player_stats["max_hp"])
 	)

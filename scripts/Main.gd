@@ -13,10 +13,15 @@ const ARENA_RECT := Rect2(Vector2(190, 60), Vector2(900, 660))
 var wave_timer_ref: float = 0.0
 
 func _ready() -> void:
+	print("[Main] _ready, nodes: player=", player, " wave_manager=", wave_manager)
+	if wave_manager == null:
+		print("[Main] ERROR: wave_manager is null!")
+		return
 	GameManager.player_died.connect(_on_player_died)
 	GameManager.game_won.connect(_show_win)
 	wave_manager.wave_ended.connect(_on_wave_ended)
 	shop.continue_pressed.connect(_on_shop_continue)
+	print("[Main] signals connected OK")
 	_show_title()
 
 func _process(delta: float) -> void:
@@ -26,12 +31,15 @@ func _process(delta: float) -> void:
 		hud.update_hud(wave_timer_ref)
 
 func start_game() -> void:
+	print("[Main] start_game called, wave=", GameManager.wave)
 	GameManager.reset()
 	_start_wave()
 
 func _start_wave() -> void:
+	print("[Main] _start_wave, wave=", GameManager.wave)
 	GameManager.game_state = "fight"
 	wave_timer_ref = GameManager.get_wave_duration()
+	print("[Main] wave duration=", wave_timer_ref)
 	for node in get_tree().get_nodes_in_group("enemies"):
 		node.queue_free()
 	for node in get_tree().get_nodes_in_group("drops"):
@@ -43,12 +51,15 @@ func _start_wave() -> void:
 	win_screen.hide()
 	shop.hide()
 	hud.show()
+	print("[Main] wave started, game_state=", GameManager.game_state)
 
 func _on_wave_ended() -> void:
+	print("[Main] wave ended, opening shop")
 	GameManager.game_state = "shop"
 	shop.open_shop()
 
 func _on_shop_continue() -> void:
+	print("[Main] shop continue pressed, next wave=", GameManager.wave + 1)
 	GameManager.wave += 1
 	if GameManager.wave > GameManager.TOTAL_WAVES:
 		_show_win()
@@ -57,6 +68,7 @@ func _on_shop_continue() -> void:
 	_start_wave()
 
 func _on_player_died() -> void:
+	print("[Main] player died on wave ", GameManager.wave)
 	GameManager.game_state = "gameover"
 	wave_manager.stop_wave()
 	gameover_screen.get_node("Panel/VBox/WaveLabel").text = "Ты дошёл до волны %d" % GameManager.wave
@@ -68,6 +80,7 @@ func _on_player_died() -> void:
 	gameover_screen.show()
 
 func _show_title() -> void:
+	print("[Main] showing title screen")
 	hud.hide()
 	shop.hide()
 	gameover_screen.hide()
@@ -75,6 +88,7 @@ func _show_title() -> void:
 	title_screen.show()
 
 func _show_win() -> void:
+	print("[Main] player won!")
 	GameManager.game_state = "win"
 	wave_manager.stop_wave()
 	win_screen.get_node("Panel/VBox/Stats/KillsVal").text = str(GameManager.player_stats["total_kills"])

@@ -1,19 +1,20 @@
 # Main.gd — Root scene controller
 extends Node2D
 
-@onready var player: CharacterBody2D = $Player
+@onready var player: CharacterBody2D = $GameObjects/Player
 @onready var wave_manager: Node = $WaveManager
 @onready var hud: CanvasLayer = $HUD
 @onready var shop: CanvasLayer = $Shop
 @onready var title_screen: CanvasLayer = $TitleScreen
 @onready var gameover_screen: CanvasLayer = $GameOverScreen
 @onready var win_screen: CanvasLayer = $WinScreen
-@onready var wave_timer_ref: float = 0.0
 
 const ARENA_RECT := Rect2(Vector2(190, 60), Vector2(900, 660))
+var wave_timer_ref: float = 0.0
 
 func _ready() -> void:
 	GameManager.player_died.connect(_on_player_died)
+	GameManager.game_won.connect(_show_win)
 	wave_manager.wave_ended.connect(_on_wave_ended)
 	shop.continue_pressed.connect(_on_shop_continue)
 	_show_title()
@@ -21,7 +22,8 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if GameManager.game_state == "fight":
 		wave_timer_ref -= delta
-		hud.update(wave_timer_ref)
+		wave_timer_ref = maxf(wave_timer_ref, 0.0)
+		hud.update_hud(wave_timer_ref)
 
 func start_game() -> void:
 	GameManager.reset()
@@ -30,7 +32,6 @@ func start_game() -> void:
 func _start_wave() -> void:
 	GameManager.game_state = "fight"
 	wave_timer_ref = GameManager.get_wave_duration()
-	# Clear leftover enemies and drops
 	for node in get_tree().get_nodes_in_group("enemies"):
 		node.queue_free()
 	for node in get_tree().get_nodes_in_group("drops"):
@@ -45,7 +46,7 @@ func _start_wave() -> void:
 
 func _on_wave_ended() -> void:
 	GameManager.game_state = "shop"
-	shop.open()
+	shop.open_shop()
 
 func _on_shop_continue() -> void:
 	GameManager.wave += 1

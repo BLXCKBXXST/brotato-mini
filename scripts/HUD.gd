@@ -9,12 +9,14 @@ extends CanvasLayer
 @onready var wave_label: Label = $TopBar/WaveLabel
 @onready var timer_label: Label = $TopBar/TimerLabel
 
-func update(wave_time_left: float) -> void:
-	var s := GameManager.player_stats
-	hp_bar.value = (float(s["hp"]) / float(s["max_hp"])) * 100.0
-	hp_label.text = "%d / %d" % [s["hp"], s["max_hp"]]
-	xp_bar.value = (float(s["xp"]) / float(s["xp_next"])) * 100.0
-	level_label.text = "Lv %d" % s["level"]
-	mats_label.text = "💜 %d" % s["materials"]
+func update_hud(time_left: float) -> void:
+	var s: Dictionary = GameManager.player_stats
+	hp_bar.max_value = float(s["max_hp"])
+	hp_bar.value = float(s["hp"])
+	hp_label.text = "%d / %d" % [int(s["hp"]), int(s["max_hp"])]
+	xp_bar.max_value = float(s["xp_next"])
+	xp_bar.value = float(s["xp"])
+	level_label.text = "Lv %d" % int(s["level"])
+	mats_label.text = "💜 %d" % int(s["materials"])
 	wave_label.text = "Волна %d / %d" % [GameManager.wave, GameManager.TOTAL_WAVES]
-	timer_label.text = "%ds" % int(maxf(0.0, wave_time_left))
+	timer_label.text = "%ds" % int(time_left)

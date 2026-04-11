@@ -7,89 +7,74 @@ signal continue_pressed
 @onready var mats_label: Label = $Panel/VBox/Footer/MatsLabel
 @onready var wave_label: Label = $Panel/VBox/WaveLabel
 
-const SHOP_ITEMS := [
-	{"name": "Нож",       "desc": "+8 урона",           "cost": 5,  "icon": "🔪", "fn": "add_damage"},
-	{"name": "Кроссовки", "desc": "+35 скорость",        "cost": 5,  "icon": "👟", "fn": "add_speed"},
-	{"name": "Аптечка",   "desc": "+25 макс HP + лечит", "cost": 5,  "icon": "💊", "fn": "add_hp"},
-	{"name": "Адреналин", "desc": "+0.5 скор. атаки",    "cost": 6,  "icon": "⚡", "fn": "add_atkspd"},
-	{"name": "Снайпер",   "desc": "+70 дальность",       "cost": 5,  "icon": "🎯", "fn": "add_range"},
-	{"name": "Пирсинг",   "desc": "Пробивание пуль +1",  "cost": 8,  "icon": "💎", "fn": "add_pierce"},
-	{"name": "Вампир",    "desc": "Вампиризм +8%",       "cost": 7,  "icon": "🦷", "fn": "add_lifesteal"},
-	{"name": "Топор",     "desc": "+14 урона",           "cost": 8,  "icon": "🪓", "fn": "add_damage_2"},
-	{"name": "Яблоко",    "desc": "Лечит 40 HP",         "cost": 4,  "icon": "🍎", "fn": "heal"},
+const ITEMS := [
+	{"name": "❤️ Аптечка",       "desc": "+30 HP",              "cost": 3,  "rarity": 0},
+	{"name": "⚔️ Острый клинок", "desc": "+5 урона",            "cost": 4,  "rarity": 1},
+	{"name": "👟 Быстрые ноги",  "desc": "+25 скорости",        "cost": 3,  "rarity": 0},
+	{"name": "🔫 Скорострел",    "desc": "+0.3 скор. атаки",    "cost": 5,  "rarity": 1},
+	{"name": "🧲 Магнит",        "desc": "+60 радиус подбора",  "cost": 3,  "rarity": 0},
+	{"name": "🩸 Вампиризм",     "desc": "+3% жизнекражи",      "cost": 6,  "rarity": 2},
+	{"name": "💪 Сила",          "desc": "+8 урона",             "cost": 6,  "rarity": 2},
+	{"name": "🏃 Рывок",         "desc": "+40 скорости",         "cost": 5,  "rarity": 1},
+	{"name": "💖 Крепкое тело",  "desc": "+20 макс. HP",         "cost": 5,  "rarity": 1},
 ]
 
-var _current_offers: Array = []
-
-func open() -> void:
-	show()
+func open_shop() -> void:
+	mats_label.text = "Материалы: %d 💜" % int(GameManager.player_stats["materials"])
 	wave_label.text = "Волна %d пройдена!" % GameManager.wave
-	_generate_offers()
-	_refresh_ui()
-
-func _generate_offers() -> void:
-	var shuffled := SHOP_ITEMS.duplicate()
-	shuffled.shuffle()
-	_current_offers = shuffled.slice(0, 4)
-
-func _refresh_ui() -> void:
-	mats_label.text = "Материалы: %d 💜" % GameManager.player_stats["materials"]
-	# Clear old buttons
 	for child in items_container.get_children():
 		child.queue_free()
-	# Build item cards
-	for item in _current_offers:
-		var btn := _make_item_card(item)
-		items_container.add_child(btn)
+	var pool: Array = ITEMS.duplicate()
+	pool.shuffle()
+	var shown: Array = pool.slice(0, 4)
+	for item in shown:
+		_add_item_card(item)
+	show()
 
-func _make_item_card(item: Dictionary) -> PanelContainer:
-	var panel := PanelContainer.new()
+func _add_item_card(item: Dictionary) -> void:
+	var card := PanelContainer.new()
 	var vbox := VBoxContainer.new()
-	var icon_lbl := Label.new()
 	var name_lbl := Label.new()
 	var desc_lbl := Label.new()
 	var cost_lbl := Label.new()
-	var buy_btn := Button.new()
-	
-	icon_lbl.text = item["icon"]
-	icon_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var btn := Button.new()
+
 	name_lbl.text = item["name"]
-	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	desc_lbl.text = item["desc"]
-	desc_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	cost_lbl.text = "%d 💜" % item["cost"]
-	cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	buy_btn.text = "Купить"
-	buy_btn.disabled = GameManager.player_stats["materials"] < item["cost"]
-	buy_btn.pressed.connect(_on_buy.bind(item))
-	
-	vbox.add_child(icon_lbl)
+	cost_lbl.text = "Цена: %d 💜" % int(item["cost"])
+	btn.text = "Купить"
+	btn.pressed.connect(_on_buy.bind(item, btn))
+
 	vbox.add_child(name_lbl)
 	vbox.add_child(desc_lbl)
 	vbox.add_child(cost_lbl)
-	vbox.add_child(buy_btn)
-	panel.add_child(vbox)
-	panel.custom_minimum_size = Vector2(160, 180)
-	return panel
+	vbox.add_child(btn)
+	card.add_child(vbox)
+	card.custom_minimum_size = Vector2(160, 0)
+	items_container.add_child(card)
 
-func _on_buy(item: Dictionary) -> void:
-	if GameManager.player_stats["materials"] < item["cost"]:
+func _on_buy(item: Dictionary, btn: Button) -> void:
+	var cost: int = int(item["cost"])
+	if int(GameManager.player_stats["materials"]) < cost:
 		return
-	GameManager.player_stats["materials"] -= item["cost"]
-	_apply_item(item["fn"])
-	_refresh_ui()
+	GameManager.player_stats["materials"] -= cost
+	_apply_item(item)
+	btn.text = "✓ Куплено"
+	btn.disabled = true
+	mats_label.text = "Материалы: %d 💜" % int(GameManager.player_stats["materials"])
 
-func _apply_item(fn_name: String) -> void:
-	match fn_name:
-		"add_damage":    GameManager.player_stats["damage"] += 8
-		"add_damage_2":  GameManager.player_stats["damage"] += 14
-		"add_speed":     GameManager.player_stats["speed"] += 35.0
-		"add_hp":        GameManager.player_stats["max_hp"] += 25; GameManager.player_stats["hp"] = mini(GameManager.player_stats["hp"] + 25, GameManager.player_stats["max_hp"])
-		"add_atkspd":    GameManager.player_stats["attack_speed"] += 0.5
-		"add_range":     GameManager.player_stats["range"] += 70.0
-		"add_pierce":    GameManager.player_stats["pierce"] += 1
-		"add_lifesteal": GameManager.player_stats["lifesteal"] += 0.08
-		"heal":          GameManager.player_stats["hp"] = minf(GameManager.player_stats["hp"] + 40.0, GameManager.player_stats["max_hp"])
+func _apply_item(item: Dictionary) -> void:
+	var s: Dictionary = GameManager.player_stats
+	match item["name"]:
+		"❤️ Аптечка":        s["hp"] = minf(float(s["hp"]) + 30.0, float(s["max_hp"]))
+		"⚔️ Острый клинок":  s["damage"] = int(s["damage"]) + 5
+		"👟 Быстрые ноги":   s["speed"] = float(s["speed"]) + 25.0
+		"🔫 Скорострел":     s["attack_speed"] = float(s["attack_speed"]) + 0.3
+		"🧲 Магнит":         s["range"] = float(s["range"]) + 60.0
+		"🩸 Вампиризм":      s["lifesteal"] = float(s["lifesteal"]) + 0.03
+		"💪 Сила":           s["damage"] = int(s["damage"]) + 8
+		"🏃 Рывок":          s["speed"] = float(s["speed"]) + 40.0
+		"💖 Крепкое тело":   s["max_hp"] = int(s["max_hp"]) + 20; s["hp"] = float(s["hp"]) + 20.0
 
 func _on_continue_pressed() -> void:
 	hide()

@@ -1,5 +1,4 @@
 # GameManager.gd — Autoload singleton
-# Holds global game state shared between scenes
 extends Node
 
 signal wave_changed(wave_number: int)
@@ -9,9 +8,8 @@ signal game_won
 const TOTAL_WAVES := 20
 
 var wave: int = 1
-var game_state: String = "title"  # title | fight | shop | gameover | win
+var game_state: String = "title"
 
-# Player persistent stats (survive between waves)
 var player_stats := {
 	"max_hp": 100,
 	"hp": 100,
@@ -28,6 +26,12 @@ var player_stats := {
 	"total_kills": 0,
 	"total_damage": 0.0,
 }
+
+func _ready() -> void:
+	# Signals are connected externally via Main.gd
+	wave_changed.connect(func(_w: int): pass)
+	player_died.connect(func(): pass)
+	game_won.connect(func(): pass)
 
 func reset() -> void:
 	wave = 1
@@ -49,16 +53,16 @@ func reset() -> void:
 	}
 
 func get_wave_duration() -> float:
-	return minf(20.0 + wave * 3.0, 60.0)
+	return minf(20.0 + float(wave) * 3.0, 60.0)
 
 func get_spawn_interval() -> float:
-	return maxf(0.3, 1.2 - wave * 0.04)
+	return maxf(0.3, 1.2 - float(wave) * 0.04)
 
 func add_xp(amount: int) -> void:
 	player_stats["xp"] += amount
 	while player_stats["xp"] >= player_stats["xp_next"]:
 		player_stats["xp"] -= player_stats["xp_next"]
 		player_stats["level"] += 1
-		player_stats["xp_next"] = int(player_stats["xp_next"] * 1.4)
-		player_stats["max_hp"] += 5
-		player_stats["hp"] = mini(player_stats["hp"] + 10, player_stats["max_hp"])
+		player_stats["xp_next"] = int(float(player_stats["xp_next"]) * 1.4)
+		player_stats["max_hp"] = int(player_stats["max_hp"]) + 5
+		player_stats["hp"] = minf(float(player_stats["hp"]) + 10.0, float(player_stats["max_hp"]))

@@ -31,6 +31,11 @@ color = Color(0.96, 0.78, 0.26, 1)
 
 [node name="Collision" type="CollisionShape2D" parent="GameObjects/Player"]
 
+[node name="AttackTimer" type="Timer" parent="GameObjects/Player"]
+wait_time = 0.833
+autostart = false
+one_shot = false
+
 [node name="RangeIndicator" type="Node2D" parent="GameObjects/Player"]
 
 [node name="WaveManager" type="Node" parent="."]

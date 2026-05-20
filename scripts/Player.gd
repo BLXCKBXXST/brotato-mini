@@ -1,8 +1,7 @@
 # Player.gd
 extends CharacterBody2D
 
-@onready var sprite: ColorRect           = $Sprite
-@onready var attack_timer: Timer         = $AttackTimer
+@onready var sprite: Sprite2D            = $Sprite
 @onready var collision: CollisionShape2D = $Collision
 @onready var range_indicator: Node2D     = $RangeIndicator
 @onready var camera: Camera2D            = $Camera2D
@@ -13,7 +12,7 @@ const ARENA_MIN := Vector2(-10, -260)
 const ARENA_MAX := Vector2(1290, 1040)
 const HALF := Vector2(18, 18)
 
-var attack_cooldown: float = 0.0
+var weapon_cooldowns: Array[float] = []
 var is_dead: bool = false
 
 func _ready() -> void:
@@ -24,12 +23,17 @@ func _ready() -> void:
 
 func _sync_stats() -> void:
 	is_dead = false
-	attack_cooldown = 1.0 / float(GameManager.player_stats["attack_speed"])
+	weapon_cooldowns.clear()
+	for _w in GameManager.player_weapons:
+		weapon_cooldowns.append(0.0)
 
 func _physics_process(delta: float) -> void:
 	if GameManager.game_state != "fight" or is_dead:
 		velocity = Vector2.ZERO
 		return
+	# Защита: если количество слотов изменилось вне _sync_stats (например, продажа в магазине → возврат в бой)
+	if weapon_cooldowns.size() != GameManager.player_weapons.size():
+		_sync_stats()
 	_handle_movement(delta)
 	_handle_shooting(delta)
 	_clamp_to_arena()
@@ -48,47 +52,81 @@ func _clamp_to_arena() -> void:
 	global_position.y = clampf(global_position.y, ARENA_MIN.y + HALF.y, ARENA_MAX.y - HALF.y)
 
 func _handle_shooting(delta: float) -> void:
-	attack_cooldown -= delta
-	if attack_cooldown <= 0.0:
-		var target := _find_nearest_enemy()
-		if target != null:
-			_shoot(target)
-			attack_cooldown = 1.0 / float(GameManager.player_stats["attack_speed"])
-		else:
-			attack_cooldown = 0.1
+	for i in range(GameManager.player_weapons.size()):
+		weapon_cooldowns[i] -= delta
+		if weapon_cooldowns[i] > 0.0:
+			continue
+		var weapon: Dictionary = GameManager.player_weapons[i]
+		var eff: Dictionary = GameManager.get_weapon_effective_stats(weapon)
+		if eff.is_empty():
+			weapon_cooldowns[i] = 0.5
+			continue
+		var target := _find_nearest_enemy_within(float(eff["range"]))
+		if target == null:
+			weapon_cooldowns[i] = 0.1
+			continue
+		_fire_weapon(weapon, eff, target)
+		weapon_cooldowns[i] = float(eff["cooldown"])
 
-func _find_nearest_enemy() -> Node2D:
+func _find_nearest_enemy_within(r: float) -> Node2D:
 	var enemies := get_tree().get_nodes_in_group("enemies")
 	var best: Node2D = null
-	var best_dist: float = float(GameManager.player_stats["range"])
+	var best_dist: float = r
 	for e in enemies:
 		var node := e as Node2D
-		if node == null or not is_instance_valid(node): continue
+		if node == null or not is_instance_valid(node):
+			continue
 		var d := global_position.distance_to(node.global_position)
 		if d < best_dist:
 			best_dist = d
 			best = node
 	return best
 
-func _shoot(target: Node2D) -> void:
+func _fire_weapon(_weapon: Dictionary, eff: Dictionary, target: Node2D) -> void:
+	var base_dir := (target.global_position - global_position).normalized()
+	var count := int(eff["bullet_count"])
+	var spread := deg_to_rad(float(eff["spread_deg"]))
+	if count <= 1:
+		var jitter := randf_range(-0.5, 0.5) * spread
+		_spawn_bullet(base_dir.rotated(jitter), eff)
+	else:
+		for i in range(count):
+			var t: float = float(i) / float(count - 1) - 0.5
+			_spawn_bullet(base_dir.rotated(t * spread), eff)
+	# Эффекты выстрела
+	AudioBus.play(String(eff["def_id"]) + "_fire")
+	var pat := String(eff["pattern"])
+	var shake: float = 1.5
+	match pat:
+		"sniper":  shake = 4.0
+		"shotgun": shake = 5.0
+		"smg":     shake = 0.6
+	GameManager.request_shake.emit(shake)
+
+func _spawn_bullet(dir: Vector2, eff: Dictionary) -> void:
 	var bullet := BULLET_SCENE.instantiate()
 	get_tree().current_scene.get_node("GameObjects").add_child(bullet)
 	bullet.global_position = global_position
-	bullet.setup(
-		target.global_position - global_position,
-		float(GameManager.player_stats["damage"]),
-		int(GameManager.player_stats["pierce"])
-	)
+	bullet.setup_extended({
+		"dir":      dir,
+		"damage":   float(eff["damage"]),
+		"pierce":   int(eff["pierce"]),
+		"speed":    float(eff["bullet_speed"]),
+		"lifetime": float(eff["bullet_lifetime"]),
+		"pattern":  String(eff["pattern"]),
+		"color":    eff["color"],
+	})
 
 func take_damage(amount: float) -> void:
-	if is_dead or GameManager.game_state != "fight": return
-	# Уклонение
+	if is_dead or GameManager.game_state != "fight":
+		return
 	if randf() < float(GameManager.player_stats["dodge"]):
 		return
-	# Броня
 	var armor: int = int(GameManager.player_stats.get("armor", 0))
 	var actual: float = maxf(amount - float(armor), 1.0)
 	GameManager.player_stats["hp"] = float(GameManager.player_stats["hp"]) - actual
+	GameManager.request_shake.emit(3.0)
+	AudioBus.play("player_hurt")
 	if float(GameManager.player_stats["hp"]) <= 0.0:
 		GameManager.player_stats["hp"] = 0
 		is_dead = true

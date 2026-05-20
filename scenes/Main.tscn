@@ -1,20 +1,29 @@
 [gd_scene load_steps=8 format=3 uid="uid://main"]
 
-[ext_resource type="Script" path="res://scripts/Main.gd" id="1"]
-[ext_resource type="Script" path="res://scripts/Player.gd" id="2"]
-[ext_resource type="Script" path="res://scripts/WaveManager.gd" id="3"]
-[ext_resource type="Script" path="res://scripts/HUD.gd" id="4"]
-[ext_resource type="Script" path="res://scripts/Shop.gd" id="5"]
+[ext_resource type="Script" uid="uid://xyl0t2ymsa6m" path="res://scripts/Main.gd" id="1"]
+[ext_resource type="Script" uid="uid://crpq4eua6r7me" path="res://scripts/Player.gd" id="2"]
+[ext_resource type="Script" uid="uid://bd1rur75deafw" path="res://scripts/WaveManager.gd" id="3"]
+[ext_resource type="Script" uid="uid://bvwrqnqw0mwcj" path="res://scripts/HUD.gd" id="4"]
+[ext_resource type="Script" uid="uid://ejekd4xhav6h" path="res://scripts/Shop.gd" id="5"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player.png" id="6"]
+[ext_resource type="Texture2D" path="res://assets/tiles/floor.png" id="7"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1")
 
-[node name="Arena" type="ColorRect" parent="."]
+[node name="ArenaBg" type="ColorRect" parent="."]
 offset_left = -10.0
 offset_top = -260.0
 offset_right = 1290.0
 offset_bottom = 1040.0
 color = Color(0.07, 0.07, 0.09, 1)
+
+[node name="Arena" type="Sprite2D" parent="."]
+texture_repeat = 2
+position = Vector2(640, 390)
+texture = ExtResource("7")
+region_enabled = true
+region_rect = Rect2(0, 0, 1300, 1300)
 
 [node name="GameObjects" type="Node2D" parent="."]
 
@@ -22,12 +31,9 @@ color = Color(0.07, 0.07, 0.09, 1)
 script = ExtResource("2")
 position = Vector2(640, 390)
 
-[node name="Sprite" type="ColorRect" parent="GameObjects/Player"]
-offset_left = -18.0
-offset_top = -18.0
-offset_right = 18.0
-offset_bottom = 18.0
-color = Color(0.96, 0.78, 0.26, 1)
+[node name="Sprite" type="Sprite2D" parent="GameObjects/Player"]
+texture = ExtResource("6")
+scale = Vector2(2.8, 2.8)
 
 [node name="Collision" type="CollisionShape2D" parent="GameObjects/Player"]
 
@@ -60,9 +66,6 @@ autostart = false
 wait_time = 20.0
 autostart = false
 
-[connection signal="timeout" from="WaveManager/SpawnTimer" to="WaveManager" method="_on_spawn_timer_timeout"]
-[connection signal="timeout" from="WaveManager/WaveTimer" to="WaveManager" method="_on_wave_timer_timeout"]
-
 [node name="HUD" type="CanvasLayer" parent="."]
 script = ExtResource("4")
 
@@ -73,11 +76,11 @@ custom_minimum_size = Vector2(0, 44)
 
 [node name="HPSection" type="HBoxContainer" parent="HUD/TopBar"]
 
-[node name="HPIcon" type="Label" parent="HUD/TopBar/HPSection"]
-text = "❤️"
+[node name="HPLabelPrefix" type="Label" parent="HUD/TopBar/HPSection"]
+text = "HP"
 
 [node name="HPBar" type="ProgressBar" parent="HUD/TopBar/HPSection"]
-custom_minimum_size = Vector2(120, 10)
+custom_minimum_size = Vector2(160, 18)
 value = 100.0
 
 [node name="HPLabel" type="Label" parent="HUD/TopBar/HPSection"]
@@ -85,18 +88,18 @@ text = "100 / 100"
 
 [node name="XPSection" type="HBoxContainer" parent="HUD/TopBar"]
 
-[node name="XPIcon" type="Label" parent="HUD/TopBar/XPSection"]
-text = "⚡"
+[node name="XPLabelPrefix" type="Label" parent="HUD/TopBar/XPSection"]
+text = "XP"
 
 [node name="XPBar" type="ProgressBar" parent="HUD/TopBar/XPSection"]
-custom_minimum_size = Vector2(100, 10)
+custom_minimum_size = Vector2(140, 18)
 value = 0.0
 
 [node name="LevelLabel" type="Label" parent="HUD/TopBar/XPSection"]
 text = "Lv 1"
 
 [node name="MatsLabel" type="Label" parent="HUD/TopBar"]
-text = "💜 0"
+text = "Mat: 0"
 
 [node name="WaveLabel" type="Label" parent="HUD/TopBar"]
 size_flags_horizontal = 8
@@ -120,26 +123,31 @@ anchor_bottom = 1.0
 
 [node name="WaveLabel" type="Label" parent="Shop/Panel/VBox"]
 horizontal_alignment = 1
+theme_type_variation = &"headline"
 text = "Волна 1 пройдена!"
 
 [node name="MatsLabel" type="Label" parent="Shop/Panel/VBox"]
 horizontal_alignment = 1
-text = "💜 Материалы: 0"
+text = "Материалы: 0"
 
 [node name="Tabs" type="HBoxContainer" parent="Shop/Panel/VBox"]
 alignment = 1
 
+[node name="TabWeaponBtn" type="Button" parent="Shop/Panel/VBox/Tabs"]
+text = "Оружие"
+custom_minimum_size = Vector2(200, 44)
+
 [node name="TabBodyBtn" type="Button" parent="Shop/Panel/VBox/Tabs"]
-text = "💪 Прокачка тела"
-custom_minimum_size = Vector2(180, 36)
+text = "Прокачка тела"
+custom_minimum_size = Vector2(220, 44)
 
 [node name="TabItemBtn" type="Button" parent="Shop/Panel/VBox/Tabs"]
-text = "🎒 Предметы"
-custom_minimum_size = Vector2(180, 36)
+text = "Предметы"
+custom_minimum_size = Vector2(200, 44)
 
 [node name="Content" type="Control" parent="Shop/Panel/VBox"]
 size_flags_vertical = 3
-custom_minimum_size = Vector2(0, 320)
+custom_minimum_size = Vector2(0, 480)
 
 [node name="BodySection" type="ScrollContainer" parent="Shop/Panel/VBox/Content"]
 anchors_preset = 15
@@ -148,7 +156,7 @@ anchor_bottom = 1.0
 
 [node name="BodyGrid" type="GridContainer" parent="Shop/Panel/VBox/Content/BodySection"]
 size_flags_horizontal = 3
-columns = 5
+columns = 4
 
 [node name="ItemSection" type="ScrollContainer" parent="Shop/Panel/VBox/Content"]
 anchors_preset = 15
@@ -160,15 +168,34 @@ visible = false
 size_flags_horizontal = 3
 columns = 4
 
+[node name="WeaponSection" type="ScrollContainer" parent="Shop/Panel/VBox/Content"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+visible = false
+
+[node name="WeaponVBox" type="VBoxContainer" parent="Shop/Panel/VBox/Content/WeaponSection"]
+size_flags_horizontal = 3
+
+[node name="SlotsLabel" type="Label" parent="Shop/Panel/VBox/Content/WeaponSection/WeaponVBox"]
+text = "Ваши оружия (0/6)"
+
+[node name="SlotsGrid" type="GridContainer" parent="Shop/Panel/VBox/Content/WeaponSection/WeaponVBox"]
+size_flags_horizontal = 3
+columns = 6
+
+[node name="ShopWeaponsLabel" type="Label" parent="Shop/Panel/VBox/Content/WeaponSection/WeaponVBox"]
+text = "Доступно к покупке:"
+
+[node name="ShopWeaponsGrid" type="GridContainer" parent="Shop/Panel/VBox/Content/WeaponSection/WeaponVBox"]
+size_flags_horizontal = 3
+columns = 4
+
 [node name="Footer" type="HBoxContainer" parent="Shop/Panel/VBox"]
 alignment = 1
 
 [node name="ContinueBtn" type="Button" parent="Shop/Panel/VBox/Footer"]
-text = "Следующая волна →"
-
-[connection signal="pressed" from="Shop/Panel/VBox/Tabs/TabBodyBtn" to="Shop" method="_on_tab_body"]
-[connection signal="pressed" from="Shop/Panel/VBox/Tabs/TabItemBtn" to="Shop" method="_on_tab_item"]
-[connection signal="pressed" from="Shop/Panel/VBox/Footer/ContinueBtn" to="Shop" method="_on_continue_pressed"]
+text = "Следующая волна"
 
 [node name="TitleScreen" type="CanvasLayer" parent="."]
 
@@ -185,20 +212,20 @@ alignment = 1
 
 [node name="Title" type="Label" parent="TitleScreen/Panel/VBox"]
 horizontal_alignment = 1
-text = "🥔 BROTATO MINI"
+theme_type_variation = &"headline"
+text = "BROTATO MINI"
 
 [node name="Subtitle" type="Label" parent="TitleScreen/Panel/VBox"]
 horizontal_alignment = 1
 text = "roguelite arena · 20 волн выживания"
 
 [node name="StartBtn" type="Button" parent="TitleScreen/Panel/VBox"]
-text = "▶ Начать игру"
+text = "Начать игру"
 
 [node name="Controls" type="Label" parent="TitleScreen/Panel/VBox"]
 horizontal_alignment = 1
-text = "WASD / Стрелки — движение\nАвто-стрельба по ближайшему врагу"
-
-[connection signal="pressed" from="TitleScreen/Panel/VBox/StartBtn" to="Main" method="start_game"]
+text = "WASD / Стрелки — движение
+Авто-стрельба по ближайшему врагу"
 
 [node name="GameOverScreen" type="CanvasLayer" parent="."]
 
@@ -215,7 +242,8 @@ alignment = 1
 
 [node name="Title" type="Label" parent="GameOverScreen/Panel/VBox"]
 horizontal_alignment = 1
-text = "💀 GAME OVER"
+theme_type_variation = &"headline"
+text = "GAME OVER"
 
 [node name="WaveLabel" type="Label" parent="GameOverScreen/Panel/VBox"]
 horizontal_alignment = 1
@@ -249,9 +277,7 @@ text = "Уровень"
 text = "1"
 
 [node name="RestartBtn" type="Button" parent="GameOverScreen/Panel/VBox"]
-text = "↩ Снова"
-
-[connection signal="pressed" from="GameOverScreen/Panel/VBox/RestartBtn" to="Main" method="start_game"]
+text = "Снова"
 
 [node name="WinScreen" type="CanvasLayer" parent="."]
 
@@ -268,7 +294,8 @@ alignment = 1
 
 [node name="Title" type="Label" parent="WinScreen/Panel/VBox"]
 horizontal_alignment = 1
-text = "🏆 ПОБЕДА!"
+theme_type_variation = &"headline"
+text = "ПОБЕДА!"
 
 [node name="Sub" type="Label" parent="WinScreen/Panel/VBox"]
 horizontal_alignment = 1
@@ -290,6 +317,44 @@ text = "Урон"
 text = "0"
 
 [node name="RestartBtn" type="Button" parent="WinScreen/Panel/VBox"]
-text = "↩ Снова"
+text = "Снова"
 
+[node name="PauseScreen" type="CanvasLayer" parent="."]
+process_mode = 3
+visible = false
+
+[node name="Panel" type="PanelContainer" parent="PauseScreen"]
+process_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBox" type="VBoxContainer" parent="PauseScreen/Panel"]
+process_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+alignment = 1
+
+[node name="Title" type="Label" parent="PauseScreen/Panel/VBox"]
+horizontal_alignment = 1
+theme_type_variation = &"headline"
+text = "ПАУЗА"
+
+[node name="Hint" type="Label" parent="PauseScreen/Panel/VBox"]
+horizontal_alignment = 1
+text = "Esc — продолжить"
+
+[node name="ResumeBtn" type="Button" parent="PauseScreen/Panel/VBox"]
+process_mode = 3
+text = "Продолжить"
+
+[connection signal="timeout" from="WaveManager/SpawnTimer" to="WaveManager" method="_on_spawn_timer_timeout"]
+[connection signal="timeout" from="WaveManager/WaveTimer" to="WaveManager" method="_on_wave_timer_timeout"]
+[connection signal="pressed" from="Shop/Panel/VBox/Tabs/TabWeaponBtn" to="Shop" method="_on_tab_weapon"]
+[connection signal="pressed" from="Shop/Panel/VBox/Tabs/TabBodyBtn" to="Shop" method="_on_tab_body"]
+[connection signal="pressed" from="Shop/Panel/VBox/Tabs/TabItemBtn" to="Shop" method="_on_tab_item"]
+[connection signal="pressed" from="Shop/Panel/VBox/Footer/ContinueBtn" to="Shop" method="_on_continue_pressed"]
+[connection signal="pressed" from="TitleScreen/Panel/VBox/StartBtn" to="Main" method="start_game"]
+[connection signal="pressed" from="GameOverScreen/Panel/VBox/RestartBtn" to="Main" method="start_game"]
 [connection signal="pressed" from="WinScreen/Panel/VBox/RestartBtn" to="Main" method="start_game"]

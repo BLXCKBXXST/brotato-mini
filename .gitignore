@@ -1,0 +1,10 @@
+# Кэш редактора Godot 4
+.godot/
+
+# Редакторы и IDE
+.vscode/
+.idea/
+
+# Системное
+.DS_Store
+Thumbs.db

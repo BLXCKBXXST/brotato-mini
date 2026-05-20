@@ -1,44 +1,231 @@
-# Shop.gd — двухвкладочный магазин: прокачка тела + предметы
+# Shop.gd — трёхвкладочный магазин: оружия + прокачка тела + предметы
 extends CanvasLayer
 
 signal continue_pressed
 
 @onready var wave_label:   Label         = $Panel/VBox/WaveLabel
 @onready var mats_label:   Label         = $Panel/VBox/MatsLabel
+@onready var tab_weapon_btn: Button      = $Panel/VBox/Tabs/TabWeaponBtn
 @onready var tab_body_btn: Button        = $Panel/VBox/Tabs/TabBodyBtn
 @onready var tab_item_btn: Button        = $Panel/VBox/Tabs/TabItemBtn
+@onready var weapon_section: ScrollContainer = $Panel/VBox/Content/WeaponSection
 @onready var body_section: ScrollContainer = $Panel/VBox/Content/BodySection
 @onready var item_section: ScrollContainer = $Panel/VBox/Content/ItemSection
+@onready var slots_grid:        GridContainer = $Panel/VBox/Content/WeaponSection/WeaponVBox/SlotsGrid
+@onready var slots_label:       Label         = $Panel/VBox/Content/WeaponSection/WeaponVBox/SlotsLabel
+@onready var shop_weapons_grid: GridContainer = $Panel/VBox/Content/WeaponSection/WeaponVBox/ShopWeaponsGrid
 @onready var body_grid:    GridContainer = $Panel/VBox/Content/BodySection/BodyGrid
 @onready var item_grid:    GridContainer = $Panel/VBox/Content/ItemSection/ItemGrid
 @onready var continue_btn: Button        = $Panel/VBox/Footer/ContinueBtn
 
 const RARITY_COLORS := [
-	Color(0.75, 0.75, 0.75),  # 0 обычный — серый
-	Color(0.4, 0.8, 0.4),     # 1 необычный — зелёный
-	Color(0.4, 0.6, 1.0),     # 2 редкий — синий
-	Color(0.85, 0.5, 1.0),    # 3 эпический — фиолетовый
+	Color(0.75, 0.75, 0.75),
+	Color(0.4, 0.8, 0.4),
+	Color(0.4, 0.6, 1.0),
+	Color(0.85, 0.5, 1.0),
 ]
 
-var _current_tab := "body"
+var _current_tab := "weapon"
 var _item_pool: Array[Dictionary] = []
+var _weapon_offers: Array[Dictionary] = []
+
+func _make_icon(path: String, size: int = 40) -> TextureRect:
+	var rect := TextureRect.new()
+	if path != "" and ResourceLoader.exists(path):
+		rect.texture = load(path)
+	rect.custom_minimum_size = Vector2(size, size)
+	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+	rect.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	return rect
 
 func open_shop() -> void:
-	mats_label.text = "💜 Материалы: %d" % int(GameManager.player_stats["materials"])
-	wave_label.text = "✅ Волна %d пройдена!" % GameManager.wave
+	mats_label.text = "Материалы: %d" % int(GameManager.player_stats["materials"])
+	wave_label.text = "Волна %d пройдена!" % GameManager.wave
 	_build_item_pool()
+	_build_weapon_offers()
 	_build_body_grid()
 	_build_item_grid()
-	_switch_tab("body")
+	_build_slots_grid()
+	_build_shop_weapons_grid()
+	_switch_tab("weapon")
 	show()
 
-func _build_item_pool() -> void:
-	_item_pool = []
-	var pool := GameManager.SHOP_ITEMS.duplicate()
-	pool.shuffle()
-	var shown := pool.slice(0, 4)
-	for item in shown:
-		_item_pool.append(item)
+# ─── Вкладка: Оружие ─────────────────────────────────────────────────────────
+func _build_weapon_offers() -> void:
+	_weapon_offers = GameManager.roll_shop_weapons(GameManager.WEAPONS_IN_SHOP)
+
+func _build_slots_grid() -> void:
+	for c in slots_grid.get_children(): c.queue_free()
+	slots_label.text = "Ваши оружия (%d / %d)" % [GameManager.player_weapons.size(), GameManager.MAX_WEAPON_SLOTS]
+	for i in range(GameManager.MAX_WEAPON_SLOTS):
+		if i < GameManager.player_weapons.size():
+			_add_owned_slot_card(i, GameManager.player_weapons[i])
+		else:
+			_add_empty_slot_card()
+
+func _add_owned_slot_card(slot_index: int, weapon: Dictionary) -> void:
+	var def := GameManager.get_weapon_def(String(weapon["def_id"]))
+	var tier := int(weapon["tier"])
+	var tier_color: Color = GameManager.TIER_COLORS[clampi(tier - 1, 0, 3)]
+	var eff := GameManager.get_weapon_effective_stats(weapon)
+
+	var card := PanelContainer.new()
+	var vbox := VBoxContainer.new()
+	vbox.custom_minimum_size = Vector2(220, 0)
+
+	vbox.add_child(_make_icon(String(def.get("icon", "")), 40))
+
+	var name_lbl := Label.new()
+	name_lbl.text = String(def.get("name", "?"))
+	name_lbl.add_theme_color_override("font_color", tier_color)
+	name_lbl.add_theme_font_size_override("font_size", 24)
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+	var tier_lbl := Label.new()
+	tier_lbl.text = "Тир %s" % GameManager.TIER_NAMES[tier - 1]
+	tier_lbl.add_theme_color_override("font_color", tier_color)
+	tier_lbl.add_theme_font_size_override("font_size", 20)
+	tier_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+	var stats_lbl := Label.new()
+	stats_lbl.text = "%.0f dmg · %.2fs · %dpx" % [
+		float(eff.get("damage", 0.0)),
+		float(eff.get("cooldown", 0.0)),
+		int(eff.get("range", 0.0)),
+	]
+	stats_lbl.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
+	stats_lbl.add_theme_font_size_override("font_size", 18)
+
+	var combine_btn := Button.new()
+	var can_comb := GameManager.can_combine(String(weapon["def_id"]), tier)
+	combine_btn.text = "Слить -> Тир %s" % (GameManager.TIER_NAMES[tier] if tier < GameManager.MAX_TIER else "MAX")
+	combine_btn.disabled = not can_comb
+	combine_btn.pressed.connect(_on_combine_weapon.bind(String(weapon["def_id"]), tier))
+
+	var sell_btn := Button.new()
+	var refund := GameManager.get_weapon_sell_price(weapon)
+	sell_btn.text = "Продать (+%d)" % refund
+	sell_btn.pressed.connect(_on_sell_weapon.bind(slot_index))
+
+	vbox.add_child(name_lbl)
+	vbox.add_child(tier_lbl)
+	vbox.add_child(stats_lbl)
+	vbox.add_child(combine_btn)
+	vbox.add_child(sell_btn)
+	card.add_child(vbox)
+	slots_grid.add_child(card)
+
+func _add_empty_slot_card() -> void:
+	var card := PanelContainer.new()
+	var vbox := VBoxContainer.new()
+	vbox.custom_minimum_size = Vector2(220, 150)
+	var lbl := Label.new()
+	lbl.text = "— пусто —"
+	lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(lbl)
+	card.add_child(vbox)
+	slots_grid.add_child(card)
+
+func _build_shop_weapons_grid() -> void:
+	for c in shop_weapons_grid.get_children(): c.queue_free()
+	for offer in _weapon_offers:
+		_add_weapon_offer_card(offer)
+
+func _add_weapon_offer_card(offer: Dictionary) -> void:
+	var def := GameManager.get_weapon_def(String(offer["def_id"]))
+	var tier := int(offer["tier"])
+	var tier_color: Color = GameManager.TIER_COLORS[clampi(tier - 1, 0, 3)]
+	var cost := int(offer["cost"])
+
+	var card := PanelContainer.new()
+	var vbox := VBoxContainer.new()
+	vbox.custom_minimum_size = Vector2(240, 0)
+
+	vbox.add_child(_make_icon(String(def.get("icon", "")), 40))
+
+	var name_lbl := Label.new()
+	name_lbl.text = "%s · Тир %s" % [String(def.get("name", "?")), GameManager.TIER_NAMES[tier - 1]]
+	name_lbl.add_theme_color_override("font_color", tier_color)
+	name_lbl.add_theme_font_size_override("font_size", 22)
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+	# Превью эффективных статов
+	var preview_eff := GameManager.get_weapon_effective_stats({"def_id": String(def["id"]), "tier": tier})
+	var stats_lbl := Label.new()
+	stats_lbl.text = "%.0f dmg · %.2fs · %dpx" % [
+		float(preview_eff.get("damage", 0.0)),
+		float(preview_eff.get("cooldown", 0.0)),
+		int(preview_eff.get("range", 0.0)),
+	]
+	stats_lbl.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
+	stats_lbl.add_theme_font_size_override("font_size", 20)
+
+	var pat_lbl := Label.new()
+	pat_lbl.text = "Паттерн: %s" % String(def.get("pattern", "?"))
+	pat_lbl.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	pat_lbl.add_theme_font_size_override("font_size", 18)
+
+	var cost_lbl := Label.new()
+	cost_lbl.text = "Цена: %d" % cost
+	cost_lbl.add_theme_font_size_override("font_size", 20)
+
+	var btn := Button.new()
+	btn.text = "Купить"
+	var slots_full: bool = GameManager.player_weapons.size() >= GameManager.MAX_WEAPON_SLOTS
+	var too_expensive: bool = int(GameManager.player_stats["materials"]) < cost
+	if slots_full:
+		btn.text = "Нет слотов"
+		btn.disabled = true
+	elif too_expensive:
+		btn.disabled = true
+	btn.pressed.connect(_on_buy_weapon.bind(offer, btn))
+
+	vbox.add_child(name_lbl)
+	vbox.add_child(pat_lbl)
+	vbox.add_child(stats_lbl)
+	vbox.add_child(cost_lbl)
+	vbox.add_child(btn)
+	card.add_child(vbox)
+	shop_weapons_grid.add_child(card)
+
+func _on_buy_weapon(offer: Dictionary, _btn: Button) -> void:
+	if GameManager.player_weapons.size() >= GameManager.MAX_WEAPON_SLOTS:
+		return
+	var cost := int(offer["cost"])
+	if int(GameManager.player_stats["materials"]) < cost:
+		return
+	GameManager.player_stats["materials"] -= cost
+	GameManager.add_weapon(String(offer["def_id"]), int(offer["tier"]))
+	_weapon_offers.erase(offer)
+	_refresh_weapon_ui()
+	_refresh_body_btns()
+	AudioBus.play("buy")
+
+func _on_sell_weapon(slot_index: int) -> void:
+	if slot_index < 0 or slot_index >= GameManager.player_weapons.size():
+		return
+	var weapon: Dictionary = GameManager.player_weapons[slot_index]
+	var refund := GameManager.get_weapon_sell_price(weapon)
+	GameManager.remove_weapon(slot_index)
+	GameManager.player_stats["materials"] += refund
+	_refresh_weapon_ui()
+	_refresh_body_btns()
+	AudioBus.play("buy")
+
+func _on_combine_weapon(def_id: String, tier: int) -> void:
+	if not GameManager.combine_weapons(def_id, tier):
+		return
+	_refresh_weapon_ui()
+	AudioBus.play("combine")
+
+func _refresh_weapon_ui() -> void:
+	_build_slots_grid()
+	_build_shop_weapons_grid()
+	mats_label.text = "Материалы: %d" % int(GameManager.player_stats["materials"])
 
 # ─── Вкладка: Прокачка тела ───────────────────────────────────────────────────
 func _build_body_grid() -> void:
@@ -53,27 +240,29 @@ func _add_body_card(upg: Dictionary) -> void:
 
 	var card := PanelContainer.new()
 	var vbox := VBoxContainer.new()
-	vbox.custom_minimum_size = Vector2(160, 0)
+	vbox.custom_minimum_size = Vector2(220, 0)
+
+	vbox.add_child(_make_icon(String(upg.get("icon", "")), 40))
 
 	var icon_lbl := Label.new()
 	icon_lbl.text = upg["name"]
 	icon_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	icon_lbl.add_theme_font_size_override("font_size", 14)
+	icon_lbl.add_theme_font_size_override("font_size", 26)
 
 	var desc_lbl := Label.new()
 	desc_lbl.text = upg["desc"]
 	desc_lbl.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
-	desc_lbl.add_theme_font_size_override("font_size", 11)
+	desc_lbl.add_theme_font_size_override("font_size", 20)
 	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
 
 	var lvl_lbl := Label.new()
 	lvl_lbl.text = "Ур. %d / %d" % [lvl, upg["max_level"]]
 	lvl_lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.4))
-	lvl_lbl.add_theme_font_size_override("font_size", 11)
+	lvl_lbl.add_theme_font_size_override("font_size", 20)
 
 	var cost_lbl := Label.new()
-	cost_lbl.text = "Цена: %d 💜" % cost_now if not maxed else "МАКС."
-	cost_lbl.add_theme_font_size_override("font_size", 11)
+	cost_lbl.text = "Цена: %d" % cost_now if not maxed else "МАКС."
+	cost_lbl.add_theme_font_size_override("font_size", 20)
 
 	var btn := Button.new()
 	btn.text = "Прокачать" if not maxed else "Максимум"
@@ -91,42 +280,55 @@ func _add_body_card(upg: Dictionary) -> void:
 func _on_buy_body(upg: Dictionary, btn: Button, lvl_lbl: Label, cost_lbl: Label) -> void:
 	var lvl := GameManager.get_body_upgrade_level(upg["id"])
 	var cost_now: int = int(upg["cost"]) + lvl * int(upg["cost"]) / 3
-	if int(GameManager.player_stats["materials"]) < cost_now: return
+	if int(GameManager.player_stats["materials"]) < cost_now:
+		return
 	GameManager.player_stats["materials"] -= cost_now
 	GameManager.apply_body_upgrade(upg)
 	var new_lvl := GameManager.get_body_upgrade_level(upg["id"])
 	var maxed: bool = new_lvl >= int(upg["max_level"])
 	var new_cost: int = int(upg["cost"]) + new_lvl * int(upg["cost"]) / 3
 	lvl_lbl.text = "Ур. %d / %d" % [new_lvl, upg["max_level"]]
-	cost_lbl.text = "Цена: %d 💜" % new_cost if not maxed else "МАКС."
+	cost_lbl.text = "Цена: %d" % new_cost if not maxed else "МАКС."
 	btn.text = "Прокачать" if not maxed else "Максимум"
 	btn.disabled = maxed or int(GameManager.player_stats["materials"]) < new_cost
-	mats_label.text = "💜 Материалы: %d" % int(GameManager.player_stats["materials"])
-	# Обновить доступность других кнопок
+	mats_label.text = "Материалы: %d" % int(GameManager.player_stats["materials"])
 	_refresh_body_btns()
+	# Слоты оружий могут поменять отображаемые статы (после buff'а damage_pct и т.п.)
+	_build_slots_grid()
+	_build_shop_weapons_grid()
+	AudioBus.play("buy")
 
 func _refresh_body_btns() -> void:
-	for card in body_grid.get_children():
-		var vbox = card.get_child(0)
-		if vbox == null: continue
-		var btn = vbox.get_child(vbox.get_child_count() - 1) as Button
-		if btn == null or btn.disabled: continue
-		# Найти соответствующий upg по индексу
-	var idx := 0
-	for card in body_grid.get_children():
-		if idx >= GameManager.BODY_UPGRADES.size(): break
-		var upg: Dictionary = GameManager.BODY_UPGRADES[idx]
+	var children := body_grid.get_children()
+	var n: int = min(children.size(), GameManager.BODY_UPGRADES.size())
+	for i in range(n):
+		var card := children[i] as PanelContainer
+		if card == null:
+			continue
+		var vbox := card.get_child(0)
+		if vbox == null:
+			continue
+		var btn := vbox.get_child(vbox.get_child_count() - 1) as Button
+		if btn == null:
+			continue
+		var upg: Dictionary = GameManager.BODY_UPGRADES[i]
 		var lvl := GameManager.get_body_upgrade_level(upg["id"])
 		var cost_now: int = int(upg["cost"]) + lvl * int(upg["cost"]) / 3
 		var maxed: bool = lvl >= int(upg["max_level"])
-		var vbox = card.get_child(0)
-		if vbox:
-			var btn = vbox.get_child(vbox.get_child_count() - 1) as Button
-			if btn:
-				btn.disabled = maxed or int(GameManager.player_stats["materials"]) < cost_now
-		idx += 1
+		btn.disabled = maxed or int(GameManager.player_stats["materials"]) < cost_now
 
 # ─── Вкладка: Предметы ────────────────────────────────────────────────────────
+func _build_item_pool() -> void:
+	_item_pool = []
+	var pool: Array = []
+	for it in GameManager.SHOP_ITEMS:
+		if String(it.get("type", "")) == "accessory":
+			pool.append(it)
+	pool.shuffle()
+	var shown := pool.slice(0, 4)
+	for item in shown:
+		_item_pool.append(item)
+
 func _build_item_grid() -> void:
 	for c in item_grid.get_children(): c.queue_free()
 	for item in _item_pool:
@@ -135,33 +337,33 @@ func _build_item_grid() -> void:
 func _add_item_card(item: Dictionary) -> void:
 	var rarity: int = item.get("rarity", 0)
 	var rarity_color: Color = RARITY_COLORS[clamp(rarity, 0, 3)]
-	var itype: String = item.get("type", "accessory")
-	var type_label: String = "[🔫 Оружие]" if itype == "weapon" else "[💍 Аксессуар]"
 
 	var card := PanelContainer.new()
 	var vbox := VBoxContainer.new()
-	vbox.custom_minimum_size = Vector2(170, 0)
+	vbox.custom_minimum_size = Vector2(240, 0)
+
+	vbox.add_child(_make_icon(String(item.get("icon", "")), 40))
 
 	var type_lbl := Label.new()
-	type_lbl.text = type_label
+	type_lbl.text = "[Аксессуар]"
 	type_lbl.add_theme_color_override("font_color", rarity_color)
-	type_lbl.add_theme_font_size_override("font_size", 10)
+	type_lbl.add_theme_font_size_override("font_size", 18)
 
 	var name_lbl := Label.new()
 	name_lbl.text = item["name"]
 	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_lbl.add_theme_color_override("font_color", rarity_color)
-	name_lbl.add_theme_font_size_override("font_size", 14)
+	name_lbl.add_theme_font_size_override("font_size", 26)
 
 	var desc_lbl := Label.new()
 	desc_lbl.text = item["desc"]
 	desc_lbl.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
-	desc_lbl.add_theme_font_size_override("font_size", 11)
+	desc_lbl.add_theme_font_size_override("font_size", 20)
 	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
 
 	var cost_lbl := Label.new()
-	cost_lbl.text = "Цена: %d 💜" % int(item["cost"])
-	cost_lbl.add_theme_font_size_override("font_size", 11)
+	cost_lbl.text = "Цена: %d" % int(item["cost"])
+	cost_lbl.add_theme_font_size_override("font_size", 20)
 
 	var btn := Button.new()
 	btn.text = "Купить"
@@ -178,21 +380,31 @@ func _add_item_card(item: Dictionary) -> void:
 
 func _on_buy_item(item: Dictionary, btn: Button) -> void:
 	var cost: int = int(item["cost"])
-	if int(GameManager.player_stats["materials"]) < cost: return
+	if int(GameManager.player_stats["materials"]) < cost:
+		return
 	GameManager.player_stats["materials"] -= cost
 	GameManager.apply_shop_item(item)
-	btn.text = "✓ Куплено"
+	btn.text = "Куплено"
 	btn.disabled = true
-	mats_label.text = "💜 Материалы: %d" % int(GameManager.player_stats["materials"])
+	mats_label.text = "Материалы: %d" % int(GameManager.player_stats["materials"])
 	_refresh_body_btns()
+	# Аксессуары могут изменить max_hp, damage_pct и т.п. — обновляем превью оружий
+	_build_slots_grid()
+	_build_shop_weapons_grid()
+	AudioBus.play("buy")
 
 # ─── Вкладки ──────────────────────────────────────────────────────────────────
 func _switch_tab(tab: String) -> void:
 	_current_tab = tab
-	body_section.visible = (tab == "body")
-	item_section.visible = (tab == "item")
-	tab_body_btn.modulate = Color.WHITE if tab == "body" else Color(0.6, 0.6, 0.6)
-	tab_item_btn.modulate = Color.WHITE if tab == "item" else Color(0.6, 0.6, 0.6)
+	weapon_section.visible = (tab == "weapon")
+	body_section.visible   = (tab == "body")
+	item_section.visible   = (tab == "item")
+	tab_weapon_btn.modulate = Color.WHITE if tab == "weapon" else Color(0.6, 0.6, 0.6)
+	tab_body_btn.modulate   = Color.WHITE if tab == "body"   else Color(0.6, 0.6, 0.6)
+	tab_item_btn.modulate   = Color.WHITE if tab == "item"   else Color(0.6, 0.6, 0.6)
+
+func _on_tab_weapon() -> void:
+	_switch_tab("weapon")
 
 func _on_tab_body() -> void:
 	_switch_tab("body")

@@ -17,6 +17,6 @@ func update_hud(time_left: float) -> void:
 	xp_bar.max_value = float(s["xp_next"])
 	xp_bar.value = float(s["xp"])
 	level_label.text = "Lv %d" % int(s["level"])
-	mats_label.text = "💜 %d" % int(s["materials"])
+	mats_label.text = "Mat: %d" % int(s["materials"])
 	wave_label.text = "Волна %d / %d" % [GameManager.wave, GameManager.TOTAL_WAVES]
 	timer_label.text = "%ds" % int(time_left)

@@ -7,7 +7,7 @@
 [![License](https://img.shields.io/badge/License-MIT-2EA043)](LICENSE)
 ![Status](https://img.shields.io/badge/status-playable-brightgreen)
 
-**A roguelite arena survival shooter — pick up weapons, stack a build, and outlast 20 waves of the horde.**
+**A roguelite arena survival shooter — pick a character, stack a build, and outlast 20 waves of the horde.**
 
 </div>
 
@@ -21,15 +21,20 @@
 
 You are a potato in an arena, and the horde wants you dead.
 
-Every wave is a countdown timer. Enemies stream in from the edges and walk straight at
-you — you move, your weapons **fire automatically** at the nearest target. Kills drop XP
-and materials. Survive the timer and the wave ends; let your HP hit zero and it's over.
+Pick one of **8 characters** on the title screen — each comes with its own stat
+traits and starting weapon. Every wave is a countdown timer. Enemies stream in
+from the edges and walk straight at you — you move, your weapons **fire
+automatically** at the nearest target. Kills drop XP and materials. Survive the
+timer and the wave ends; let your HP hit zero and it's over.
 
 Between waves the **shop** opens: spend materials on new weapons, permanent body
 upgrades and accessories, then hit *Next Wave*. Clear all **20 waves** to win.
 
 ## ✨ Features
 
+- **8 playable characters** — All-Rounder, Tank, Rapid Gunner, Marksman, Vampire,
+  Sprinter, Berserker and Lucky, each with unique stat modifiers (positive and
+  negative) and a signature starting weapon.
 - **20 escalating waves** — enemies get faster, tougher and more numerous every round.
 - **6 weapons**, each with **4 tiers** (I–IV). Buy two of the same tier and **combine**
   them into the next — pistol, SMG, shotgun, sniper, flamer and minigun, up to 6 slots.
@@ -82,7 +87,7 @@ The game is a plain Godot project — no build step, no dependencies.
 ```
 brotato-mini/
 ├── scenes/         Godot scenes (Main, Enemy, Bullet, Drop, …)
-├── scripts/        GDScript game logic (~1.8k lines)
+├── scripts/        GDScript game logic (~1.9k lines)
 ├── assets/         sprites, icons, fonts, sounds
 ├── themes/         UI theme
 ├── docs/           design document + media

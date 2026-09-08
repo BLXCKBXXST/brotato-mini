@@ -86,6 +86,71 @@ const WEAPON_DEFS := [
 var wave: int = 1
 var game_state: String = "title"
 
+# ─── Персонажи ────────────────────────────────────────────────────────────────
+# mods — модификаторы статов, применяются поверх базовых при reset().
+# Поддерживаемые ключи: max_hp, armor, speed, damage_pct, attack_speed_pct,
+# range_pct, pierce_bonus, lifesteal, dodge, materials_pct.
+const CHARACTER_DEFS := [
+	{
+		"id": "balanced", "name": "Универсал",
+		"desc": "Классический картофель. Без бонусов, но и без слабостей.",
+		"tint": Color(1.0, 1.0, 1.0),
+		"mods": {},
+		"start_weapon": "pistol",
+	},
+	{
+		"id": "tank", "name": "Танк",
+		"desc": "Живучий, но медлительный. Любит впитывать урон лицом.",
+		"tint": Color(0.55, 0.65, 0.85),
+		"mods": {"max_hp": 40, "armor": 4, "speed": -25.0},
+		"start_weapon": "pistol",
+	},
+	{
+		"id": "gunner", "name": "Скорострел",
+		"desc": "Стеклянная пушка: поливает свинцом, но хрупкий.",
+		"tint": Color(1.0, 0.9, 0.35),
+		"mods": {"attack_speed_pct": 0.25, "damage_pct": 0.10, "max_hp": -20},
+		"start_weapon": "smg",
+	},
+	{
+		"id": "marksman", "name": "Стрелок",
+		"desc": "Бьёт далеко и больно, но перезаряжается дольше.",
+		"tint": Color(0.45, 0.9, 1.0),
+		"mods": {"range_pct": 0.40, "damage_pct": 0.30, "attack_speed_pct": -0.25},
+		"start_weapon": "sniper",
+	},
+	{
+		"id": "leech", "name": "Вампир",
+		"desc": "Пьёт жизнь из врагов. Чем больше урона — тем больше HP.",
+		"tint": Color(0.9, 0.35, 0.45),
+		"mods": {"lifesteal": 0.12, "max_hp": -10},
+		"start_weapon": "pistol",
+	},
+	{
+		"id": "speedy", "name": "Спринтер",
+		"desc": "Быстрый и увертливый. Здоровья — на один укус.",
+		"tint": Color(0.5, 1.0, 0.6),
+		"mods": {"speed": 60.0, "dodge": 0.08, "max_hp": -20},
+		"start_weapon": "pistol",
+	},
+	{
+		"id": "berserk", "name": "Берсерк",
+		"desc": "Огромный урон, но броня в минусе — каждый удар больнее.",
+		"tint": Color(1.0, 0.5, 0.3),
+		"mods": {"damage_pct": 0.30, "attack_speed_pct": 0.10, "armor": -3},
+		"start_weapon": "shotgun",
+	},
+	{
+		"id": "lucky", "name": "Счастливчик",
+		"desc": "Враги роняют больше материалов. Сам бьёт слабее.",
+		"tint": Color(0.75, 0.55, 1.0),
+		"mods": {"materials_pct": 0.50, "damage_pct": -0.10},
+		"start_weapon": "pistol",
+	},
+]
+
+var selected_character: String = "balanced"
+
 # Базовые статы персонажа
 var player_stats := {
 	"max_hp":       100,
@@ -103,6 +168,7 @@ var player_stats := {
 	"pierce_bonus":     0,
 	"lifesteal":    0.0,
 	"dodge":        0.0,
+	"materials_pct": 0.0,
 	"level":        1,
 	"xp":           0,
 	"xp_next":      30,
@@ -182,6 +248,7 @@ func reset() -> void:
 		"pierce_bonus":     0,
 		"lifesteal":    0.0,
 		"dodge":        0.0,
+		"materials_pct": 0.0,
 		"level":        1,
 		"xp":           0,
 		"xp_next":      30,
@@ -189,10 +256,43 @@ func reset() -> void:
 		"total_kills":  0,
 		"total_damage": 0.0,
 	}
-	add_weapon("pistol", 1)
+	# Применяем трейты выбранного персонажа
+	var ch := get_selected_character()
+	_apply_stat_mods(ch.get("mods", {}))
+	player_stats["hp"] = float(player_stats["max_hp"])
+	add_weapon(String(ch.get("start_weapon", "pistol")), 1)
+
+# ─── Персонажи: API ──────────────────────────────────────────────────────────
+func get_character_def(char_id: String) -> Dictionary:
+	for c in CHARACTER_DEFS:
+		if c["id"] == char_id:
+			return c
+	return {}
+
+func get_selected_character() -> Dictionary:
+	var ch := get_character_def(selected_character)
+	if ch.is_empty():
+		return CHARACTER_DEFS[0]
+	return ch
 
 func get_body_upgrade_level(stat_id: String) -> int:
 	return body_upgrades.get(stat_id, 0)
+
+# Универсальное применение модификаторов статов (персонажи, аксессуары)
+func _apply_stat_mods(mods: Dictionary) -> void:
+	var s := player_stats
+	for key in mods:
+		match String(key):
+			"max_hp":           s["max_hp"] = int(s["max_hp"]) + int(mods[key])
+			"armor":            s["armor"]  = int(s["armor"]) + int(mods[key])
+			"speed":            s["speed"]  = float(s["speed"]) + float(mods[key])
+			"damage_pct":       s["damage_pct"] = float(s["damage_pct"]) + float(mods[key])
+			"attack_speed_pct": s["attack_speed_pct"] = float(s["attack_speed_pct"]) + float(mods[key])
+			"range_pct":        s["range_pct"] = float(s["range_pct"]) + float(mods[key])
+			"pierce_bonus":     s["pierce_bonus"] = int(s["pierce_bonus"]) + int(mods[key])
+			"lifesteal":        s["lifesteal"] = float(s["lifesteal"]) + float(mods[key])
+			"dodge":            s["dodge"]  = minf(float(s["dodge"]) + float(mods[key]), 0.80)
+			"materials_pct":    s["materials_pct"] = float(s["materials_pct"]) + float(mods[key])
 
 func apply_body_upgrade(upgrade: Dictionary) -> void:
 	var sid: String = upgrade["id"]
@@ -211,20 +311,11 @@ func apply_body_upgrade(upgrade: Dictionary) -> void:
 
 func apply_shop_item(item: Dictionary) -> void:
 	owned_items.append(item)
-	var s := player_stats
 	var stats: Dictionary = item.get("stats", {})
-	for key in stats:
-		match key:
-			"hp_heal":            s["hp"] = minf(float(s["hp"]) + float(stats[key]), float(s["max_hp"]))
-			"max_hp":             s["max_hp"] = int(s["max_hp"]) + int(stats[key])
-			"armor":              s["armor"]  = int(s["armor"]) + int(stats[key])
-			"speed":              s["speed"]  = float(s["speed"]) + float(stats[key])
-			"damage_pct":         s["damage_pct"] = float(s["damage_pct"]) + float(stats[key])
-			"attack_speed_pct":   s["attack_speed_pct"] = float(s["attack_speed_pct"]) + float(stats[key])
-			"range_pct":          s["range_pct"] = float(s["range_pct"]) + float(stats[key])
-			"pierce_bonus":       s["pierce_bonus"] = int(s["pierce_bonus"]) + int(stats[key])
-			"lifesteal":          s["lifesteal"] = float(s["lifesteal"]) + float(stats[key])
-			"dodge":              s["dodge"]  = minf(float(s["dodge"]) + float(stats[key]), 0.80)
+	# Мгновенное лечение — отдельно, это не модификатор стата
+	if stats.has("hp_heal"):
+		player_stats["hp"] = minf(float(player_stats["hp"]) + float(stats["hp_heal"]), float(player_stats["max_hp"]))
+	_apply_stat_mods(stats)
 
 func get_wave_duration() -> float:
 	return minf(20.0 + float(wave) * 3.0, 60.0)

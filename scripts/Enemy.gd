@@ -123,7 +123,8 @@ func _die() -> void:
 		return
 	is_dying = true
 	GameManager.player_stats["total_kills"] += 1
-	GameManager.player_stats["materials"]   += mat_reward
+	var mat_mult := 1.0 + float(GameManager.player_stats.get("materials_pct", 0.0))
+	GameManager.player_stats["materials"] += int(round(mat_reward * mat_mult))
 	GameManager.add_xp(xp_reward)
 	_spawn_drops()
 	# Партиклы цвета врага

@@ -1,8 +1,14 @@
-# AudioBus.gd — Autoload. Процедурные звуки через AudioStreamWAV в памяти.
+# AudioBus.gd — Autoload. Звуки из assets/sfx/*.mp3, фолбэк — процедурные тоны.
 extends Node
 
 const POOL_SIZE := 10
 const SAMPLE_RATE := 22050
+const SFX_DIR := "res://assets/sfx/"
+
+const SFX_IDS := [
+	"pistol_fire", "shotgun_fire", "sniper_fire", "smg_fire", "flamer_fire", "minigun_fire",
+	"enemy_hit", "enemy_die", "player_hurt", "boss_die", "level_up", "combine", "buy",
+]
 
 var _streams: Dictionary = {}
 var _players: Array[AudioStreamPlayer] = []
@@ -15,19 +21,8 @@ func _ready() -> void:
 		p.process_mode = Node.PROCESS_MODE_ALWAYS
 		add_child(p)
 		_players.append(p)
-	_streams["pistol_fire"]  = _make_tone(820.0, 0.06, 0.18)
-	_streams["shotgun_fire"] = _make_noise(0.14, 0.45)
-	_streams["sniper_fire"]  = _make_tone(240.0, 0.22, 0.30)
-	_streams["smg_fire"]     = _make_tone(1200.0, 0.04, 0.12)
-	_streams["flamer_fire"]  = _make_noise(0.08, 0.22)
-	_streams["minigun_fire"] = _make_tone(1000.0, 0.04, 0.13)
-	_streams["enemy_hit"]    = _make_tone(440.0, 0.05, 0.10)
-	_streams["enemy_die"]    = _make_noise(0.18, 0.32)
-	_streams["player_hurt"]  = _make_tone(180.0, 0.18, 0.45)
-	_streams["boss_die"]     = _make_noise(0.55, 0.60)
-	_streams["level_up"]     = _make_tone(660.0, 0.20, 0.30)
-	_streams["combine"]      = _make_tone(880.0, 0.16, 0.28)
-	_streams["buy"]          = _make_tone(520.0, 0.08, 0.20)
+	for id in SFX_IDS:
+		_streams[id] = _load_sfx(id)
 
 func play(id: String) -> void:
 	if not _streams.has(id):
@@ -36,6 +31,32 @@ func play(id: String) -> void:
 	_next_player = (_next_player + 1) % POOL_SIZE
 	p.stream = _streams[id]
 	p.play()
+
+# Берём mp3 из assets/sfx/, если файла нет — генерируем процедурный тон как раньше
+func _load_sfx(id: String) -> AudioStream:
+	var path := SFX_DIR + id + ".mp3"
+	if ResourceLoader.exists(path):
+		var s := load(path)
+		if s is AudioStream:
+			return s
+	return _make_procedural(id)
+
+func _make_procedural(id: String) -> AudioStream:
+	match id:
+		"pistol_fire":  return _make_tone(820.0, 0.06, 0.18)
+		"shotgun_fire": return _make_noise(0.14, 0.45)
+		"sniper_fire":  return _make_tone(240.0, 0.22, 0.30)
+		"smg_fire":     return _make_tone(1200.0, 0.04, 0.12)
+		"flamer_fire":  return _make_noise(0.08, 0.22)
+		"minigun_fire": return _make_tone(1000.0, 0.04, 0.13)
+		"enemy_hit":    return _make_tone(440.0, 0.05, 0.10)
+		"enemy_die":    return _make_noise(0.18, 0.32)
+		"player_hurt":  return _make_tone(180.0, 0.18, 0.45)
+		"boss_die":     return _make_noise(0.55, 0.60)
+		"level_up":     return _make_tone(660.0, 0.20, 0.30)
+		"combine":      return _make_tone(880.0, 0.16, 0.28)
+		"buy":          return _make_tone(520.0, 0.08, 0.20)
+	return _make_tone(440.0, 0.08, 0.15)
 
 func _make_tone(freq: float, duration: float, volume: float) -> AudioStreamWAV:
 	var n := int(SAMPLE_RATE * duration)

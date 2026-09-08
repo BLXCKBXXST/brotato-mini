@@ -219,6 +219,18 @@ text = "BROTATO MINI"
 horizontal_alignment = 1
 text = "roguelite arena · 20 волн выживания"
 
+[node name="CharLabel" type="Label" parent="TitleScreen/Panel/VBox"]
+horizontal_alignment = 1
+text = "Выбери персонажа"
+
+[node name="CharScroll" type="ScrollContainer" parent="TitleScreen/Panel/VBox"]
+custom_minimum_size = Vector2(0, 300)
+size_flags_vertical = 3
+
+[node name="CharGrid" type="GridContainer" parent="TitleScreen/Panel/VBox/CharScroll"]
+size_flags_horizontal = 3
+columns = 4
+
 [node name="StartBtn" type="Button" parent="TitleScreen/Panel/VBox"]
 text = "Начать игру"
 
@@ -286,7 +298,7 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 
-[node name="VBox" type="VBoxContainer" parent="WinScreen/Panel"]
+[node name="VBox" type="VBoxContainer" parent="WinScreen/Panel/VBox"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
